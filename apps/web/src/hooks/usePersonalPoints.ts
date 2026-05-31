@@ -10,6 +10,7 @@ export function usePersonalPoints() {
     queryKey: ['personal-points'],
     queryFn: async () => {
       const res = await api.get('/api/personal-points')
+      console.log('[PP] données API:', res.data)
       return res.data as PersonalPoint[]
     },
     staleTime: 5 * 60 * 1000,

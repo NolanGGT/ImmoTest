@@ -137,7 +137,7 @@ export async function forgotPassword(email: string): Promise<void> {
     },
   })
 
-  const resetLink = `${process.env.WEB_URL ?? 'http://localhost:3001'}/reset-password?token=${rawToken}`
+  const resetLink = `${process.env.WEB_URL ?? 'http://localhost:3010'}/reset-password?token=${rawToken}`
   await sendEmail({
     to: user.email,
     subject: '🔑 Réinitialisation de votre mot de passe ImmoSafe',

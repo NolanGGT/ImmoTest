@@ -129,7 +129,7 @@ export async function resetPassword(req: Request, res: Response, next: NextFunct
 }
 
 export async function googleCallback(req: Request, res: Response): Promise<void> {
-  const webUrl = process.env.WEB_URL ?? 'http://localhost:3001'
+  const webUrl = process.env.WEB_URL ?? 'http://localhost:3010'
   try {
     const user = req.user as { id: string; email: string; role: 'USER' | 'ADMIN' }
     const result = await authService.issueTokens(user.id, user.email, user.role ?? 'USER', false)

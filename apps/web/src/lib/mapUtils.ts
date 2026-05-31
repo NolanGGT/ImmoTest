@@ -35,7 +35,7 @@ export interface NearestPoint {
 
 export function buildGeoJSON(
   biens: BienMapData[],
-  personalPoints: PersonalPoint[],
+  personalPoints: PersonalPoint[] = [],
   bienRisques: Record<string, boolean> = {}
 ): GeoJSON.FeatureCollection {
   const bienFeatures = biens
@@ -60,20 +60,10 @@ export function buildGeoJSON(
 
   const personalFeatures = personalPoints.map((p) => ({
     type: 'Feature' as const,
+    id: `personal-${p.id}`,
     geometry: { type: 'Point' as const, coordinates: [p.longitude, p.latitude] },
-    properties: {
-      type: 'personal',
-      id: p.id,
-      label: p.label,
-      color: p.color,
-      radiusKm: p.radiusKm,
-    },
+    properties: { type: 'personal', id: p.id, label: p.label, color: p.color },
   }))
-
-  if (personalPoints.length > 0) {
-    console.log('[GEOJSON] personal point ids:', personalPoints.map((p) => p.id))
-    console.log('[GEOJSON] expected image names:', personalPoints.map((p) => `pin-personal-${p.id}`))
-  }
 
   return {
     type: 'FeatureCollection',

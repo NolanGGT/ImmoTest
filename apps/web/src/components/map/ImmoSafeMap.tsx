@@ -196,6 +196,9 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
   const { points: personalPoints, addPoint, updatePoint, deletePoint, canAdd } = usePersonalPoints()
   const personalPointsRef = useRef(personalPoints)
   useEffect(() => { personalPointsRef.current = personalPoints }, [personalPoints])
+  useEffect(() => {
+    console.log('[PP] useEffect personal points:', personalPoints.length, personalPoints)
+  }, [personalPoints])
 
   // ── States ──────────────────────────────────────────────────────────────────
 
@@ -392,30 +395,64 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
 
   const loadAllImages = useCallback(async (mapInstance: mapboxgl.Map) => {
     await loadLayerIcons(mapInstance)
-    for (const point of personalPointsRef.current) {
-      const imageName = `pin-personal-${point.id}`
-      console.log('[IMAGES] chargement:', imageName, '— hasImage avant:', mapInstance.hasImage(imageName))
-      await loadSVGImage(mapInstance, imageName, createPersonalPinSVG(point.color, point.label.charAt(0)), 28, 36)
-      console.log('[IMAGES] hasImage après:', mapInstance.hasImage(imageName))
-    }
   }, [])
 
-  const setupPersonalPointsLayers = useCallback((points: PersonalPoint[]) => {
+  const setupPersonalPointsLayers = useCallback(async () => {
     const map = mapRef.current
     if (!map || !map.isStyleLoaded()) return
 
-    // Update unified biens source to include current personal points
-    const biensSource = map.getSource('biens') as mapboxgl.GeoJSONSource | undefined
-    biensSource?.setData(buildGeoJSON(visibleBiensRef.current, points, bienRisquesRef.current))
+    const points = personalPointsRef.current
 
-    // Rebuild comfort zone
+    // personal-points-icon is in BIENS_LAYER_IDS so it's cleaned by setupBiensLayers;
+    // clean it here too for direct calls (sync effect, style change)
+    try { if (map.getLayer('personal-points-icon')) map.removeLayer('personal-points-icon') } catch { /* */ }
     for (const id of ZONE_LAYER_IDS) {
       try { if (map.getLayer(id)) map.removeLayer(id) } catch { /* */ }
     }
+    // Remove legacy separate source if present from a previous code version
+    try { if (map.getSource('personal-points')) map.removeSource('personal-points') } catch { /* */ }
     try { if (map.getSource('comfort-zone')) map.removeSource('comfort-zone') } catch { /* */ }
 
     if (points.length === 0) return
 
+    // Load pin images before adding the layer
+    for (const point of points) {
+      const name = `pin-personal-${point.id}`
+      if (!map.hasImage(name)) {
+        await loadSVGImage(map, name, createPersonalPinSVG(point.color, point.label.charAt(0)), 28, 36)
+      }
+    }
+
+    // Sync biens source so personal features are present for clustering
+    const biensSource = map.getSource('biens') as mapboxgl.GeoJSONSource | undefined
+    biensSource?.setData(buildGeoJSON(visibleBiensRef.current, points, bienRisquesRef.current))
+
+    // personal-points-icon on the shared biens source — filtered, so points cluster with biens
+    map.addLayer({
+      id: 'personal-points-icon',
+      type: 'symbol',
+      source: 'biens',
+      filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'personal']],
+      layout: {
+        'icon-image': ['concat', 'pin-personal-', ['get', 'id']],
+        'icon-size': 1,
+        'icon-anchor': 'bottom',
+        'icon-allow-overlap': true,
+        'text-field': ['get', 'label'],
+        'text-offset': [0, 0.5],
+        'text-anchor': 'top',
+        'text-size': 11,
+        'text-optional': true,
+        'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Regular'],
+      },
+      paint: {
+        'text-color': ['get', 'color'],
+        'text-halo-color': '#ffffff',
+        'text-halo-width': 2,
+      },
+    })
+
+    // Comfort zone below the icon layer
     const zone = computeComfortZone(points)
     if (zone) {
       map.addSource('comfort-zone', { type: 'geojson', data: zone })
@@ -423,12 +460,14 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
         id: 'comfort-zone-fill',
         type: 'fill',
         source: 'comfort-zone',
+        minzoom: 11,
         paint: { 'fill-color': '#7c3aed', 'fill-opacity': 0.12 },
       }, 'personal-points-icon')
       map.addLayer({
         id: 'comfort-zone-outline',
         type: 'line',
         source: 'comfort-zone',
+        minzoom: 11,
         paint: {
           'line-color': '#7c3aed',
           'line-width': 2,
@@ -437,7 +476,7 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
         },
       }, 'personal-points-icon')
     }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Route layer ──────────────────────────────────────────────────────────────
 
@@ -664,11 +703,11 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
   const initializeAllLayers = useCallback(async () => {
     const map = mapRef.current
     if (!map || !map.isStyleLoaded()) return
-    console.log('[INIT] initializeAllLayers appelé')
     await loadAllImages(map)
-    console.log('[INIT] images chargées')
     setupBiensLayers()
-    console.log('[INIT] biens layers créés')
+    if (personalPointsRef.current.length > 0) {
+      await setupPersonalPointsLayers()
+    }
     activeLayersRef.current.forEach((layerType) => {
       if (layerType === 'risques') return
       const data = layerDataRef.current[layerType]
@@ -696,16 +735,7 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
         if (!mapRef.current) { clearInterval(waitForStyle); return }
         if (mapRef.current.isStyleLoaded()) {
           clearInterval(waitForStyle)
-          console.log('[STYLE] prêt après', attempts * 100, 'ms')
-          initializeAllLayers().then(() => {
-            setTimeout(() => {
-              if (personalPointsRef.current.length > 0 && mapRef.current) {
-                loadAllImages(mapRef.current).then(() => {
-                  setupPersonalPointsLayers(personalPointsRef.current)
-                })
-              }
-            }, 200)
-          })
+          initializeAllLayers()
         }
         if (attempts > 50) {
           clearInterval(waitForStyle)
@@ -737,15 +767,7 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
       if (!mapRef.current) { clearInterval(waitForStyle); return }
       if (mapRef.current.isStyleLoaded()) {
         clearInterval(waitForStyle)
-        initializeAllLayers().then(() => {
-          setTimeout(() => {
-            if (personalPointsRef.current.length > 0 && mapRef.current) {
-              loadAllImages(mapRef.current).then(() => {
-                setupPersonalPointsLayers(personalPointsRef.current)
-              })
-            }
-          }, 200)
-        })
+        initializeAllLayers()
       }
       if (attempts > 50) clearInterval(waitForStyle)
     }, 100)
@@ -1037,26 +1059,20 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
     map.getCanvas().style.cursor = isPlacingMode ? 'crosshair' : ''
   }, [isPlacingMode])
 
-  // ── Sync personal points source ───────────────────────────────────────────────
+  // ── Sync personal points layers ───────────────────────────────────────────────
 
   useEffect(() => {
-    if (!mapRef.current || !mapReady) return
+    if (!mapReady || !mapRef.current) return
     if (personalPoints.length === 0) return
 
-    let attempts = 0
-    const wait = setInterval(() => {
-      attempts++
-      if (!mapRef.current) { clearInterval(wait); return }
-      if (mapRef.current.isStyleLoaded()) {
-        clearInterval(wait)
-        loadAllImages(mapRef.current).then(() => {
-          setupPersonalPointsLayers(personalPoints)
-        })
+    const setup = () => {
+      if (!mapRef.current?.isStyleLoaded()) {
+        setTimeout(setup, 200)
+        return
       }
-      if (attempts > 50) clearInterval(wait)
-    }, 100)
-
-    return () => clearInterval(wait)
+      setupPersonalPointsLayers()
+    }
+    setup()
   }, [personalPoints, mapReady]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Sync biens source ────────────────────────────────────────────────────────
@@ -1064,17 +1080,6 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
   useEffect(() => {
     updateBiensSource()
   }, [visibleBiens, bienRisques, updateBiensSource])
-
-  // ── Comfort zone visibility based on zoom ─────────────────────────────────────
-
-  useEffect(() => {
-    if (!mapRef.current?.isStyleLoaded()) return
-    const visible = currentZoom >= 14 ? 'visible' : 'none'
-    if (mapRef.current.getLayer('comfort-zone-fill')) {
-      mapRef.current.setLayoutProperty('comfort-zone-fill', 'visibility', visible)
-      mapRef.current.setLayoutProperty('comfort-zone-outline', 'visibility', visible)
-    }
-  }, [currentZoom])
 
   // ── Sync route layer ─────────────────────────────────────────────────────────
 

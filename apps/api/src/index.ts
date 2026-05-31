@@ -49,7 +49,7 @@ app.use(
 )
 app.use(
   cors({
-    origin: process.env.WEB_URL || 'http://localhost:3001',
+    origin: process.env.WEB_URL || 'http://localhost:3010',
     credentials: true,
   })
 )
@@ -123,7 +123,7 @@ app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
   })
 })
 
-const PORT = parseInt(process.env.PORT || '3000', 10)
+const PORT = parseInt(process.env.PORT || '3011', 10)
 app.listen(PORT, () => {
   logger.info(`API running on http://localhost:${PORT}`)
 })

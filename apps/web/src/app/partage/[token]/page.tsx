@@ -15,7 +15,7 @@ import { NegociationBlock } from '@/components/immosafe/NegociationBlock'
 import { PointVigilanceItem } from '@/components/immosafe/PointVigilanceItem'
 import type { AnalyseResult } from '@immosafe/shared-types'
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3011'
 
 const NIVEAU_ORDER = { CRITIQUE: 0, ATTENTION: 1, INFO: 2 }
 

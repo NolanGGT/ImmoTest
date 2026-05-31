@@ -67,7 +67,7 @@ export function confirmationPaiement(params: {
   dateExpiration: string
   montant: string
 }): string {
-  const appUrl = process.env.WEB_URL ?? 'http://localhost:3001'
+  const appUrl = process.env.WEB_URL ?? 'http://localhost:3010'
   return layout(`
     <p>Bonjour,</p>
     <p>Votre paiement a bien été reçu. Votre accès ImmoSafe est actif jusqu'au <strong>${params.dateExpiration}</strong>.</p>
@@ -91,7 +91,7 @@ export function rappelExpiration(params: {
   dateExpiration: string
   nbAnalyses: number
 }): string {
-  const appUrl = process.env.WEB_URL ?? 'http://localhost:3001'
+  const appUrl = process.env.WEB_URL ?? 'http://localhost:3010'
   return layout(`
     <p>Bonjour,</p>
     <p>Votre accès ImmoSafe expire le <strong>${params.dateExpiration}</strong>.<br>
@@ -107,7 +107,7 @@ export function rappelExpiration(params: {
 export function abonnementExpire(params: {
   dateExpiration: string
 }): string {
-  const appUrl = process.env.WEB_URL ?? 'http://localhost:3001'
+  const appUrl = process.env.WEB_URL ?? 'http://localhost:3010'
   return layout(`
     <p>Bonjour,</p>
     <p>Votre accès ImmoSafe a expiré le <strong>${params.dateExpiration}</strong>.</p>
