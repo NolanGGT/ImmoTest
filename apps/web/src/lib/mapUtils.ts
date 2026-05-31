@@ -1,0 +1,157 @@
+import { LAYERS } from './map'
+import type { OverpassNode } from './overpass'
+
+export interface BienMapData {
+  id: string
+  ville: string
+  prix: number
+  surface: number
+  typeBien: string
+  scoreImmoSafe: number
+  latitude: number
+  longitude: number
+  statut: string
+  isFavorite: boolean
+}
+
+export interface PersonalPoint {
+  id: string
+  userId: string
+  label: string
+  latitude: number
+  longitude: number
+  color: string
+  radiusKm: number
+  createdAt: string
+}
+
+export interface NearestPoint {
+  layerId: string
+  name: string
+  distance: number
+  minutes: number
+  emoji: string
+}
+
+export function buildGeoJSON(
+  biens: BienMapData[],
+  personalPoints: PersonalPoint[],
+  bienRisques: Record<string, boolean> = {}
+): GeoJSON.FeatureCollection {
+  const bienFeatures = biens
+    .filter((b) => b.latitude && b.longitude)
+    .map((b) => ({
+      type: 'Feature' as const,
+      geometry: { type: 'Point' as const, coordinates: [b.longitude, b.latitude] },
+      properties: {
+        type: 'bien',
+        id: b.id,
+        score: b.scoreImmoSafe,
+        scoreLabel: String(b.scoreImmoSafe),
+        ville: b.ville,
+        prix: b.prix,
+        surface: b.surface,
+        typeBien: b.typeBien,
+        statut: b.statut,
+        isFavorite: b.isFavorite,
+        atRisk: bienRisques[b.id] ?? false,
+      },
+    }))
+
+  const personalFeatures = personalPoints.map((p) => ({
+    type: 'Feature' as const,
+    geometry: { type: 'Point' as const, coordinates: [p.longitude, p.latitude] },
+    properties: {
+      type: 'personal',
+      id: p.id,
+      label: p.label,
+      color: p.color,
+      radiusKm: p.radiusKm,
+    },
+  }))
+
+  if (personalPoints.length > 0) {
+    console.log('[GEOJSON] personal point ids:', personalPoints.map((p) => p.id))
+    console.log('[GEOJSON] expected image names:', personalPoints.map((p) => `pin-personal-${p.id}`))
+  }
+
+  return {
+    type: 'FeatureCollection',
+    features: [...bienFeatures, ...personalFeatures],
+  }
+}
+
+export function buildPersonalPointsGeoJSON(points: PersonalPoint[]): GeoJSON.FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: points.map((p) => ({
+      type: 'Feature' as const,
+      geometry: {
+        type: 'Point' as const,
+        coordinates: [p.longitude, p.latitude],
+      },
+      properties: { id: p.id, label: p.label, color: p.color },
+    })),
+  }
+}
+
+export function distanceMetres(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 6371000
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLon = ((lon2 - lon1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(a))
+}
+
+export function minutesAPied(metres: number): number {
+  return Math.round(metres / 83)
+}
+
+export function findNearestPoints(
+  bienLat: number,
+  bienLon: number,
+  layerData: Partial<Record<string, OverpassNode[]>>,
+  activeLayers: Set<string>,
+  maxDistance = 1000
+): NearestPoint[] {
+  const results: NearestPoint[] = []
+
+  for (const layerId of activeLayers) {
+    if (layerId === 'risques') continue
+    const nodes = layerData[layerId] ?? []
+    if (nodes.length === 0) continue
+
+    let nearest: OverpassNode | null = null
+    let nearestDist = Infinity
+
+    for (const node of nodes) {
+      const dist = distanceMetres(bienLat, bienLon, node.lat, node.lon)
+      if (dist < nearestDist && dist <= maxDistance) {
+        nearestDist = dist
+        nearest = node
+      }
+    }
+
+    if (nearest) {
+      const config = LAYERS.find((l) => l.id === layerId)
+      results.push({
+        layerId,
+        name: nearest.tags.name || nearest.tags.operator || config?.label || layerId,
+        distance: Math.round(nearestDist),
+        minutes: minutesAPied(nearestDist),
+        emoji: config?.emoji ?? '📍',
+      })
+    }
+  }
+
+  return results.sort((a, b) => a.distance - b.distance).slice(0, 4)
+}

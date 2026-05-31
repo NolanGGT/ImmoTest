@@ -1,0 +1,206 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model User {
+  id               String        @id @default(cuid())
+  email            String        @unique
+  passwordHash     String
+  googleId         String?       @unique
+  refreshTokenHash String?
+  role             UserRole      @default(USER)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  subscription     Subscription?
+  biens            Bien[]
+  freeAnalysisUsed Boolean       @default(false)
+  passwordResetTokens PasswordResetToken[]
+  twoFactorAuth    TwoFactorAuth?
+  personalPoints   PersonalPoint[]
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String             @unique
+  user                 User               @relation(fields: [userId], references: [id])
+  stripeCustomerId     String             @unique
+  stripeSubscriptionId String             @unique
+  status               SubscriptionStatus
+  currentPeriodEnd     DateTime
+  createdAt            DateTime           @default(now())
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+model Bien {
+  id           String     @id @default(cuid())
+  userId       String?
+  user         User?      @relation(fields: [userId], references: [id])
+
+  urlSource         String?
+  titre             String?
+  prix              Int
+  surface           Float
+  typeBien          TypeBien
+  nbPieces          Int?
+  ville             String
+  codePostal        String
+  adresse           String?
+  latitude          Float?
+  longitude         Float?
+  dpe               String?
+  charges           Int?
+  anneeConstruction Int?
+
+  prixM2Bien        Float?
+  prixM2Marche      Float?
+  historiqueAnnonce Json?
+  joursEnLigne      Int?
+
+  scoreImmoSafe    Int?
+  analyse          Json?
+  historiqueScores Json     @default("[]")
+
+  lastCheckedAt    DateTime?
+  lastKnownPrix    Int?
+
+  statut         BienStatut      @default(EN_COURS)
+  isFavorite     Boolean         @default(false)
+  rapport        Rapport?
+  sharedAnalyses SharedAnalyse[]
+  priceChecks    PriceCheck[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model SharedAnalyse {
+  id        String   @id @default(cuid())
+  bienId    String
+  bien      Bien     @relation(fields: [bienId], references: [id], onDelete: Cascade)
+  token     String   @unique @default(cuid())
+  expiresAt DateTime
+  views     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+enum TypeBien {
+  APPARTEMENT
+  MAISON
+  STUDIO
+}
+
+enum BienStatut {
+  EN_COURS
+  VISITE_PLANIFIEE
+  OFFRE_FAITE
+  ABANDONNE
+}
+
+model Rapport {
+  id        String   @id @default(cuid())
+  bienId    String   @unique
+  bien      Bien     @relation(fields: [bienId], references: [id])
+  fileUrl   String
+  createdAt DateTime @default(now())
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model TwoFactorAuth {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secret    String
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model PriceCheck {
+  id          String   @id @default(cuid())
+  bienId      String
+  bien        Bien     @relation(fields: [bienId], references: [id], onDelete: Cascade)
+  userId      String
+  ancienPrix  Int
+  nouveauPrix Int
+  pourcentage Float
+  seen        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([userId, seen])
+  @@index([bienId])
+}
+
+model RevokedToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  revokedAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([tokenHash])
+  @@index([expiresAt])
+}
+
+model LoginAttempt {
+  id          String    @id @default(cuid())
+  identifier  String    @unique
+  attempts    Int       @default(0)
+  lockedUntil DateTime?
+  lastAttempt DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([identifier])
+}
+
+model PersonalPoint {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String   @db.VarChar(50)
+  latitude  Float
+  longitude Float
+  color         String   @default("#7c3aed")
+  radiusKm      Float    @default(0)
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  userId    String?
+  ip        String?
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}

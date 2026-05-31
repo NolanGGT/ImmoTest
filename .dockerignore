@@ -1,0 +1,16 @@
+node_modules
+.git
+.github
+*.md
+.env
+.env.local
+.env.production
+apps/*/node_modules
+apps/*/.next
+apps/*/dist
+packages/*/node_modules
+packages/*/dist
+.turbo
+coverage
+*.log
+.DS_Store
