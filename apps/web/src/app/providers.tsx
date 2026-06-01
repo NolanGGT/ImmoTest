@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { usePathname } from 'next/navigation'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from 'next-themes'
 import { Toaster } from 'sonner'
@@ -9,13 +10,21 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAuthStore } from '@/stores/auth.store'
 import api from '@/lib/api'
 
+const PUBLIC_ROUTES = ['/login', '/register']
+
 function AuthInitializer({ onReady }: { onReady: () => void }) {
   const { setAuth, clearAuth, accessToken } = useAuthStore()
   const hasInitialized = useRef(false)
+  const pathname = usePathname()
 
   useEffect(() => {
     if (hasInitialized.current) return
     hasInitialized.current = true
+
+    if (PUBLIC_ROUTES.some(route => pathname.startsWith(route))) {
+      onReady()
+      return
+    }
 
     if (accessToken) {
       onReady()

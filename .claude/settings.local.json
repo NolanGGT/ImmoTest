@@ -29,7 +29,9 @@
       "Bash(Get-ChildItem *)",
       "Bash(python3 *)",
       "PowerShell(Get-Content *)",
-      "Bash(xargs grep -l \"radiusMinutes\")"
+      "Bash(xargs grep -l \"radiusMinutes\")",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\Nolan\\\\Documents\\\\GitHub\\\\ImmoTest\\\\apps\\\\web\" -Recurse -Force | Where-Object { $_.Name -match \"middleware|Initializer|auth\" } | Select-Object FullName)",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\Nolan\\\\Documents\\\\GitHub\\\\ImmoTest\\\\apps\\\\web\\\\src\" -Recurse -Force | Select-Object FullName | Where-Object { $_.FullName -notmatch \"node_modules|\\\\.next\" })"
     ]
   }
 }

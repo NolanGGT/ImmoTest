@@ -36,7 +36,8 @@ function applyPOIVisibility(map: mapboxgl.Map, show: boolean): void {
   for (const layer of style.layers) {
     if (
       (layer.id.includes('poi') || layer.id === 'transit-label') &&
-      !layer.id.startsWith('layer-')
+      !layer.id.startsWith('layer-') &&
+      !layer.id.startsWith('personal-')
     ) {
       try {
         map.setLayoutProperty(layer.id, 'visibility', show ? 'visible' : 'none')
@@ -59,15 +60,6 @@ function createBienPinSVG(color: string): string {
   </svg>`
 }
 
-function createPersonalPinSVG(color: string, letter: string): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="36" viewBox="0 0 28 36">
-    <path d="M14 0C6.3 0 0 6.3 0 14C0 24.5 14 36 14 36C14 36 28 24.5 28 14C28 6.3 21.7 0 14 0Z"
-          fill="${color}"/>
-    <circle cx="14" cy="13" r="8" fill="white" opacity="0.95"/>
-    <text x="14" y="18" text-anchor="middle" font-size="10" font-weight="bold"
-          font-family="system-ui" fill="${color}">${letter.toUpperCase()}</text>
-  </svg>`
-}
 
 function loadSVGImage(map: mapboxgl.Map, name: string, svg: string, w: number, h: number): Promise<void> {
   return new Promise<void>((resolve, reject) => {
@@ -156,16 +148,20 @@ function buildLayerPopupContent(layerId: string, props: Record<string, string>):
   }
 }
 
+const CLUSTER_MAX_ZOOM = 11
+
 const BIENS_LAYER_IDS = [
   'biens-risque',
   'biens-favorite',
   'biens-symbol',
   'biens-cluster-count',
   'biens-clusters',
-  'personal-points-icon',
+  'personal-points-label',
+  'personal-points-letter',
+  'personal-points-circle',
 ] as const
 
-const ZONE_LAYER_IDS = ['comfort-zone-fill', 'comfort-zone-outline'] as const
+const ZONE_LAYER_IDS = ['comfort-zone-fill', 'comfort-zone-border'] as const
 const ROUTE_LAYER_IDS = ['route-line', 'route-casing'] as const
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -196,9 +192,6 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
   const { points: personalPoints, addPoint, updatePoint, deletePoint, canAdd } = usePersonalPoints()
   const personalPointsRef = useRef(personalPoints)
   useEffect(() => { personalPointsRef.current = personalPoints }, [personalPoints])
-  useEffect(() => {
-    console.log('[PP] useEffect personal points:', personalPoints.length, personalPoints)
-  }, [personalPoints])
 
   // ── States ──────────────────────────────────────────────────────────────────
 
@@ -276,7 +269,7 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
       type: 'geojson',
       data: buildGeoJSON(visibleBiensRef.current, personalPointsRef.current, bienRisquesRef.current),
       cluster: true,
-      clusterMaxZoom: 14,
+      clusterMaxZoom: CLUSTER_MAX_ZOOM,
       clusterRadius: 25,
       clusterMinPoints: 6,
       promoteId: 'id',
@@ -361,18 +354,47 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
       },
     })
 
+    const personalFilter: mapboxgl.FilterSpecification = ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'personal']]
+
     map.addLayer({
-      id: 'personal-points-icon',
+      id: 'personal-points-circle',
+      type: 'circle',
+      source: 'biens',
+      filter: personalFilter,
+      minzoom: CLUSTER_MAX_ZOOM,
+      paint: {
+        'circle-radius': 12,
+        'circle-color': ['get', 'color'],
+        'circle-stroke-width': 3,
+        'circle-stroke-color': '#ffffff',
+      },
+    })
+
+    map.addLayer({
+      id: 'personal-points-letter',
       type: 'symbol',
       source: 'biens',
-      filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'personal']],
+      filter: personalFilter,
+      minzoom: CLUSTER_MAX_ZOOM,
       layout: {
-        'icon-image': ['concat', 'pin-personal-', ['get', 'id']],
-        'icon-size': 1,
-        'icon-anchor': 'bottom',
-        'icon-allow-overlap': true,
+        'text-field': ['slice', ['get', 'label'], 0, 1],
+        'text-size': 12,
+        'text-font': ['DIN Offc Pro Bold', 'Arial Unicode MS Bold'],
+        'text-allow-overlap': true,
+        'text-ignore-placement': true,
+      },
+      paint: { 'text-color': '#ffffff' },
+    })
+
+    map.addLayer({
+      id: 'personal-points-label',
+      type: 'symbol',
+      source: 'biens',
+      filter: personalFilter,
+      minzoom: CLUSTER_MAX_ZOOM,
+      layout: {
         'text-field': ['get', 'label'],
-        'text-offset': [0, 0.5],
+        'text-offset': [0, 1.8],
         'text-anchor': 'top',
         'text-size': 11,
         'text-optional': true,
@@ -397,85 +419,46 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
     await loadLayerIcons(mapInstance)
   }, [])
 
-  const setupPersonalPointsLayers = useCallback(async () => {
+  const applyPersonalPoints = useCallback((points: PersonalPoint[]) => {
     const map = mapRef.current
     if (!map || !map.isStyleLoaded()) return
 
-    const points = personalPointsRef.current
+    // STEP 1 — sync biens source (personal features live here)
+    const biensSource = map.getSource('biens') as mapboxgl.GeoJSONSource | undefined
+    biensSource?.setData(buildGeoJSON(visibleBiensRef.current, points, bienRisquesRef.current))
 
-    // personal-points-icon is in BIENS_LAYER_IDS so it's cleaned by setupBiensLayers;
-    // clean it here too for direct calls (sync effect, style change)
-    try { if (map.getLayer('personal-points-icon')) map.removeLayer('personal-points-icon') } catch { /* */ }
+    // STEP 3 — rebuild comfort zone from scratch
     for (const id of ZONE_LAYER_IDS) {
       try { if (map.getLayer(id)) map.removeLayer(id) } catch { /* */ }
     }
-    // Remove legacy separate source if present from a previous code version
-    try { if (map.getSource('personal-points')) map.removeSource('personal-points') } catch { /* */ }
     try { if (map.getSource('comfort-zone')) map.removeSource('comfort-zone') } catch { /* */ }
 
     if (points.length === 0) return
 
-    // Load pin images before adding the layer
-    for (const point of points) {
-      const name = `pin-personal-${point.id}`
-      if (!map.hasImage(name)) {
-        await loadSVGImage(map, name, createPersonalPinSVG(point.color, point.label.charAt(0)), 28, 36)
-      }
-    }
-
-    // Sync biens source so personal features are present for clustering
-    const biensSource = map.getSource('biens') as mapboxgl.GeoJSONSource | undefined
-    biensSource?.setData(buildGeoJSON(visibleBiensRef.current, points, bienRisquesRef.current))
-
-    // personal-points-icon on the shared biens source — filtered, so points cluster with biens
-    map.addLayer({
-      id: 'personal-points-icon',
-      type: 'symbol',
-      source: 'biens',
-      filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'personal']],
-      layout: {
-        'icon-image': ['concat', 'pin-personal-', ['get', 'id']],
-        'icon-size': 1,
-        'icon-anchor': 'bottom',
-        'icon-allow-overlap': true,
-        'text-field': ['get', 'label'],
-        'text-offset': [0, 0.5],
-        'text-anchor': 'top',
-        'text-size': 11,
-        'text-optional': true,
-        'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Regular'],
-      },
-      paint: {
-        'text-color': ['get', 'color'],
-        'text-halo-color': '#ffffff',
-        'text-halo-width': 2,
-      },
-    })
-
-    // Comfort zone below the icon layer
     const zone = computeComfortZone(points)
-    if (zone) {
-      map.addSource('comfort-zone', { type: 'geojson', data: zone })
-      map.addLayer({
-        id: 'comfort-zone-fill',
-        type: 'fill',
-        source: 'comfort-zone',
-        minzoom: 11,
-        paint: { 'fill-color': '#7c3aed', 'fill-opacity': 0.12 },
-      }, 'personal-points-icon')
-      map.addLayer({
-        id: 'comfort-zone-outline',
-        type: 'line',
-        source: 'comfort-zone',
-        minzoom: 11,
-        paint: {
-          'line-color': '#7c3aed',
-          'line-width': 2,
-          'line-opacity': 0.6,
-          'line-dasharray': [2, 2],
-        },
-      }, 'personal-points-icon')
-    }
+    if (!zone) return
+
+    map.addSource('comfort-zone', { type: 'geojson', data: zone })
+    const beforeLayer = map.getLayer('personal-points-circle') ? 'personal-points-circle' : undefined
+    map.addLayer({
+      id: 'comfort-zone-fill',
+      type: 'fill',
+      source: 'comfort-zone',
+      minzoom: CLUSTER_MAX_ZOOM,
+      paint: { 'fill-color': '#7c3aed', 'fill-opacity': 0.12 },
+    }, beforeLayer)
+    map.addLayer({
+      id: 'comfort-zone-border',
+      type: 'line',
+      source: 'comfort-zone',
+      minzoom: CLUSTER_MAX_ZOOM,
+      paint: {
+        'line-color': '#7c3aed',
+        'line-width': 2,
+        'line-opacity': 0.6,
+        'line-dasharray': [3, 2],
+      },
+    }, beforeLayer)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Route layer ──────────────────────────────────────────────────────────────
@@ -705,9 +688,7 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
     if (!map || !map.isStyleLoaded()) return
     await loadAllImages(map)
     setupBiensLayers()
-    if (personalPointsRef.current.length > 0) {
-      await setupPersonalPointsLayers()
-    }
+    await applyPersonalPoints(personalPointsRef.current)
     activeLayersRef.current.forEach((layerType) => {
       if (layerType === 'risques') return
       const data = layerDataRef.current[layerType]
@@ -964,7 +945,7 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
       })
 
       // Personal point click → popup with label
-      map.on('click', 'personal-points-icon', (e) => {
+      map.on('click', 'personal-points-circle', (e) => {
         if (!e.features?.length) return
         const props = e.features[0].properties as { label: string }
         const coords = (e.features[0].geometry as GeoJSON.Point).coordinates as [number, number]
@@ -1006,10 +987,10 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
         if (!isPlacingModeRef.current) map.getCanvas().style.cursor = ''
       })
 
-      map.on('mouseenter', 'personal-points-icon', () => {
+      map.on('mouseenter', 'personal-points-circle', () => {
         if (!isPlacingModeRef.current) map.getCanvas().style.cursor = 'pointer'
       })
-      map.on('mouseleave', 'personal-points-icon', () => {
+      map.on('mouseleave', 'personal-points-circle', () => {
         if (!isPlacingModeRef.current) map.getCanvas().style.cursor = ''
       })
 
@@ -1021,7 +1002,7 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
           setIsPlacingMode(false)
           return
         }
-        const possibleLayers = ['biens-symbol', 'biens-clusters', 'personal-points-icon']
+        const possibleLayers = ['biens-symbol', 'biens-clusters', 'personal-points-circle']
         const layersToQuery = possibleLayers.filter((id) => {
           try { return !!map.getLayer(id) } catch { return false }
         })
@@ -1030,17 +1011,6 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
         if (!features.length) setSelectedBien(null)
       })
 
-      // Load personal pin images on demand as features exit clusters
-      map.on('styleimagemissing', async (e: { id: string }) => {
-        console.log('[MISSING IMAGE]', e.id)
-        if (!e.id.startsWith('pin-personal-')) return
-        const pointId = e.id.replace('pin-personal-', '')
-        const point = personalPointsRef.current.find((p) => p.id === pointId)
-        if (point) {
-          await loadSVGImage(map, e.id, createPersonalPinSVG(point.color, point.label.charAt(0)), 28, 36)
-          console.log('[PIN] image chargée à la volée:', e.id)
-        }
-      })
     })
 
     return () => {
@@ -1062,18 +1032,17 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
   // ── Sync personal points layers ───────────────────────────────────────────────
 
   useEffect(() => {
-    if (!mapReady || !mapRef.current) return
-    if (personalPoints.length === 0) return
+    if (!mapReady) return
 
-    const setup = () => {
+    const apply = () => {
       if (!mapRef.current?.isStyleLoaded()) {
-        setTimeout(setup, 200)
+        setTimeout(apply, 200)
         return
       }
-      setupPersonalPointsLayers()
+      applyPersonalPoints(personalPoints)
     }
-    setup()
-  }, [personalPoints, mapReady]) // eslint-disable-line react-hooks/exhaustive-deps
+    apply()
+  }, [personalPoints, mapReady, applyPersonalPoints])
 
   // ── Sync biens source ────────────────────────────────────────────────────────
 
