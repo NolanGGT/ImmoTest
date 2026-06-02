@@ -17,6 +17,7 @@ RUN npm run build --workspace=packages/shared-types
 # ── 3. Build API ───────────────────────────────────────────────────────────────
 FROM builder-types AS builder-api
 COPY apps/api/ ./apps/api/
+RUN npx prisma generate --schema=apps/api/prisma/schema.prisma
 RUN npm run build --workspace=apps/api
 
 # ── 4. Lean production image ───────────────────────────────────────────────────
@@ -30,8 +31,6 @@ COPY --from=builder-api /app/apps/api/package*.json ./
 COPY --from=builder-api /app/apps/api/prisma ./prisma
 COPY --from=builder-api /app/node_modules ./node_modules
 COPY --from=builder-api /app/apps/api/prompts ./prompts
-
-RUN npx prisma generate
 
 EXPOSE 3000
 
