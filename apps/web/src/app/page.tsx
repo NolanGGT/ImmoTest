@@ -37,6 +37,38 @@ function FadeIn({ children, delay = 0, className = '' }: {
 
 const serif = { fontFamily: 'var(--font-playfair)' } as React.CSSProperties
 
+const faqLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: 'ImmoTest remplace-t-il un agent immobilier ?',
+      acceptedAnswer: { '@type': 'Answer', text: "Non. ImmoTest vous donne des données objectives pour prendre une décision éclairée. Un agent gère la partie juridique et administrative. ImmoTest vous aide à savoir si un bien vaut le coup avant même de contacter un agent." },
+    },
+    {
+      '@type': 'Question',
+      name: "D'où viennent vos données de prix ?",
+      acceptedAnswer: { '@type': 'Answer', text: "Nous utilisons les DVF (Demandes de Valeurs Foncières), la base officielle du gouvernement français qui recense toutes les transactions immobilières réelles. Pas d'estimation — des prix de vente réels." },
+    },
+    {
+      '@type': 'Question',
+      name: 'Mon analyse est-elle confidentielle ?',
+      acceptedAnswer: { '@type': 'Answer', text: "Oui. Vos analyses ne sont jamais partagées. Seul vous (et les personnes que vous invitez explicitement) pouvez les voir." },
+    },
+    {
+      '@type': 'Question',
+      name: 'Fonctionne-t-il pour toutes les villes de France ?',
+      acceptedAnswer: { '@type': 'Answer', text: "Oui. Les données DVF couvrent toute la France métropolitaine. La précision est meilleure dans les grandes villes où les transactions sont plus nombreuses." },
+    },
+    {
+      '@type': 'Question',
+      name: "Que se passe-t-il après 3 mois ?",
+      acceptedAnswer: { '@type': 'Answer', text: "Votre accès expire. Vos analyses restent sauvegardées pendant 6 mois. Vous pouvez renouveler à tout moment pour 29 €." },
+    },
+  ],
+}
+
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
@@ -224,6 +256,10 @@ export default function LandingPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
       />
 
       <LandingNavbar />
@@ -568,9 +604,9 @@ export default function LandingPage() {
               <p className="text-sm text-slate-400">Achetez mieux, sans intermédiaire.</p>
             </div>
             <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-400">
-              <a href="#" className="hover:text-white transition-colors">Mentions légales</a>
-              <a href="#" className="hover:text-white transition-colors">CGU</a>
-              <a href="#" className="hover:text-white transition-colors">Confidentialité</a>
+              <Link href="/mentions-legales" className="hover:text-white transition-colors">Mentions légales</Link>
+              <Link href="/cgu" className="hover:text-white transition-colors">CGU</Link>
+              <Link href="/confidentialite" className="hover:text-white transition-colors">Confidentialité</Link>
               <a href="mailto:contact@immotest.fr" className="hover:text-white transition-colors">
                 contact@immotest.fr
               </a>

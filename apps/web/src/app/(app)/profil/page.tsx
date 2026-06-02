@@ -167,7 +167,7 @@ function ProfilContent() {
 
     if (success === 'true') {
       queryClient.invalidateQueries({ queryKey: ['subscription'] })
-      setNotification({ type: 'success', message: 'Paiement réussi ! Votre accès ImmoSafe est maintenant actif.' })
+      setNotification({ type: 'success', message: 'Paiement réussi ! Votre accès ImmoTest est maintenant actif.' })
       router.replace('/profil')
     } else if (cancelled === 'true') {
       setNotification({ type: 'info', message: 'Paiement annulé. Vous pouvez réessayer quand vous le souhaitez.' })
@@ -327,7 +327,7 @@ function ProfilContent() {
             // Bloc A — pas abonné
             <div className="space-y-5">
               <div>
-                <p className="font-semibold mb-3">Passez à l'abonnement ImmoSafe</p>
+                <p className="font-semibold mb-3">Passez à l'abonnement ImmoTest</p>
                 <ul className="space-y-2 text-sm">
                   {[
                     'Analyses illimitées',

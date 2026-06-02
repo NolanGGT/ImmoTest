@@ -47,7 +47,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="px-4 py-4 border-b">
           <div className="flex items-center gap-2">
             <ShieldCheck size={18} className="text-indigo-600" />
-            <span className="font-bold text-sm">ImmoSafe Admin</span>
+            <span className="font-bold text-sm">ImmoTest Admin</span>
           </div>
         </div>
 

@@ -24,7 +24,7 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Bonjour, {firstName}</h1>
-        <p className="text-muted-foreground mt-1 text-sm">Bienvenue sur votre tableau de bord ImmoSafe.</p>
+        <p className="text-muted-foreground mt-1 text-sm">Bienvenue sur votre tableau de bord ImmoTest.</p>
       </div>
 
       {isLoading ? (
@@ -40,7 +40,7 @@ export default function DashboardPage() {
           <p className="text-4xl mb-4">🏠</p>
           <h2 className="font-semibold text-lg mb-2">Aucun bien analysé</h2>
           <p className="text-muted-foreground text-sm mb-6 max-w-xs mx-auto">
-            Analysez votre premier bien et obtenez un score ImmoSafe en 10 secondes.
+            Analysez votre premier bien et obtenez un score ImmoTest en 10 secondes.
           </p>
           <Button asChild>
             <Link href="/analyser">Analyser un bien</Link>

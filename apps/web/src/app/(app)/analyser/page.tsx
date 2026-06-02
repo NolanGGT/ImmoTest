@@ -256,7 +256,7 @@ function AnalyserContent() {
               <div className="mb-6">
                 <h1 className="text-2xl font-bold tracking-tight">Analyser un bien</h1>
                 <p className="text-muted-foreground mt-1 text-sm">
-                  Renseignez les informations du bien pour obtenir votre score ImmoSafe.
+                  Renseignez les informations du bien pour obtenir votre score ImmoTest.
                 </p>
               </div>
 
@@ -639,7 +639,7 @@ function AnalyserContent() {
             <ul className="text-sm space-y-1.5 text-muted-foreground">
               <li>✅ Analyses illimitées</li>
               <li>✅ Rapports PDF téléchargeables</li>
-              <li>✅ Score ImmoSafe détaillé</li>
+              <li>✅ Score ImmoTest détaillé</li>
             </ul>
             <Button className="w-full bg-indigo-600 hover:bg-indigo-700" asChild>
               <Link href="/profil">Voir les tarifs — 29 €</Link>

@@ -109,6 +109,12 @@ model Bien {
   votes          BienVote[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([userId, statut])
+  @@index([userId, scoreImmoSafe])
+  @@index([urlSource])
+  @@index([latitude, longitude])
 }
 
 model SharedAnalyse {
@@ -119,6 +125,8 @@ model SharedAnalyse {
   expiresAt DateTime
   views     Int      @default(0)
   createdAt DateTime @default(now())
+
+  @@index([bienId])
 }
 
 enum TypeBien {

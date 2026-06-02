@@ -182,7 +182,7 @@ export function BienPopup({
       {/* Score */}
       <div className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-700">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Score ImmoSafe</span>
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Score ImmoTest</span>
           <span className={`text-sm font-bold ${scoreConfig.color}`}>
             {bien.scoreImmoSafe}/100
           </span>

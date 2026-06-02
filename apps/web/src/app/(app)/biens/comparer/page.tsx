@@ -72,7 +72,7 @@ function generateSynthese(biens: BienComplet[]): string {
     (b.scoreImmoSafe ?? 0) > (best.scoreImmoSafe ?? 0) ? b : best
   )
   if (bestScore.scoreImmoSafe != null) {
-    parts.push(`${bestScore.ville} a le meilleur score ImmoSafe (${bestScore.scoreImmoSafe}/100)`)
+    parts.push(`${bestScore.ville} a le meilleur score ImmoTest (${bestScore.scoreImmoSafe}/100)`)
   }
 
   const withPrixM2 = biens.filter((b) => b.prixM2Bien != null)
@@ -209,7 +209,7 @@ export default function ComparerPage() {
           <tbody>
             {/* Score */}
             <tr className={ROW_H}>
-              <td className={LABEL_CELL}>Score ImmoSafe</td>
+              <td className={LABEL_CELL}>Score ImmoTest</td>
               {biens.map((b, i) => (
                 <td key={b.id} className={`${DATA_CELL_BASE} ${cellClass(hl.scores[i])}`}>
                   {b.scoreImmoSafe != null ? (

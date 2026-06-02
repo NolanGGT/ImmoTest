@@ -77,7 +77,7 @@ export default function PartagePage({ params }: { params: Promise<{ token: strin
             : 'Une erreur est survenue lors du chargement.'}
         </p>
         <Button asChild className="bg-indigo-600 hover:bg-indigo-700 mt-2">
-          <Link href="/">Découvrir ImmoSafe</Link>
+          <Link href="/">Découvrir ImmoTest</Link>
         </Button>
       </div>
     )
@@ -108,7 +108,7 @@ export default function PartagePage({ params }: { params: Promise<{ token: strin
     <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto px-4 py-8 space-y-5">
         <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-          <span className="font-medium text-foreground">ImmoSafe</span>
+          <span className="font-medium text-foreground">ImmoTest</span>
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
               <Eye size={12} />
@@ -161,7 +161,7 @@ export default function PartagePage({ params }: { params: Promise<{ token: strin
         >
           <p className="text-lg font-bold">Analysez vos propres biens</p>
           <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-            ImmoSafe analyse les prix du marché, le DPE et vous donne les arguments de négociation — gratuitement.
+            ImmoTest analyse les prix du marché, le DPE et vous donne les arguments de négociation — gratuitement.
           </p>
           <Button asChild className="bg-indigo-600 hover:bg-indigo-700">
             <Link href="/register">

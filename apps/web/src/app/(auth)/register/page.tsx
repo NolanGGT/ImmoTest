@@ -96,7 +96,7 @@ function RegisterForm() {
         <CardHeader>
           <CardTitle className="text-2xl">Créer un compte</CardTitle>
           <CardDescription>
-            Rejoignez ImmoSafe et analysez votre premier bien gratuitement
+            Rejoignez ImmoTest et analysez votre premier bien gratuitement
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

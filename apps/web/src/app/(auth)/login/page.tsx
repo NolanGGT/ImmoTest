@@ -80,7 +80,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl">Connexion</CardTitle>
-          <CardDescription>Connectez-vous à votre compte ImmoSafe</CardDescription>
+          <CardDescription>Connectez-vous à votre compte ImmoTest</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Google OAuth */}

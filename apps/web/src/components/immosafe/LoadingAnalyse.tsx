@@ -9,7 +9,7 @@ const STEPS = [
   { label: 'Géolocalisation du bien...', delay: 0 },
   { label: 'Récupération des transactions DVF...', delay: 2000 },
   { label: "Analyse du DPE (ADEME)...", delay: 4500 },
-  { label: 'Génération du score ImmoSafe...', delay: 7000 },
+  { label: 'Génération du score ImmoTest...', delay: 7000 },
 ]
 
 interface LoadingAnalyseProps {
