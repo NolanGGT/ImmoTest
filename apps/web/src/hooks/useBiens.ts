@@ -6,6 +6,7 @@ export type SortOption = 'recent' | 'score' | 'prix_asc' | 'prix_desc'
 
 export interface BienSummary {
   id: string
+  userId: string | null
   titre: string | null
   ville: string
   typeBien: string
@@ -17,6 +18,8 @@ export interface BienSummary {
   createdAt: string
   latitude: number | null
   longitude: number | null
+  annonceRetiree: boolean
+  votes: Array<{ userId: string; vote: string; comment: string | null }>
 }
 
 interface Pagination {
@@ -31,6 +34,7 @@ interface Pagination {
 interface BiensResponse {
   biens: BienSummary[]
   pagination: Pagination
+  meta: { isGuestView: boolean; ownerEmail: string | null }
 }
 
 async function fetchBiens(opts: {

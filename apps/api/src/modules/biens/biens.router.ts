@@ -4,6 +4,7 @@ import * as partageController from '../partage/partage.controller'
 import { optionalAuthMiddleware, authMiddleware } from '../../middlewares/auth.middleware'
 import { analyserRateLimit, scrapingRateLimit } from '../../middlewares/rateLimit.middleware'
 import { validateId } from '../../middlewares/validateId.middleware'
+import { requireBienAccess } from '../../middlewares/bienAccess.middleware'
 
 export const biensRouter = Router()
 
@@ -14,9 +15,12 @@ biensRouter.get('/price-changes', authMiddleware, biensController.getPriceChange
 biensRouter.post('/price-changes/seen', authMiddleware, biensController.markPriceChangesSeen)
 biensRouter.get('/', authMiddleware, biensController.listBiens)
 biensRouter.get('/:id', authMiddleware, validateId, biensController.getBien)
+biensRouter.get('/:id/quartier', authMiddleware, validateId, biensController.quartier)
 biensRouter.patch('/:id', authMiddleware, validateId, biensController.patchBien)
 biensRouter.delete('/:id', authMiddleware, validateId, biensController.deleteBien)
 biensRouter.post('/:id/relancer', authMiddleware, validateId, biensController.relancerAnalyse)
+biensRouter.post('/:id/vote', authMiddleware, validateId, requireBienAccess, biensController.voteOnBien)
+biensRouter.get('/:id/votes', authMiddleware, validateId, requireBienAccess, biensController.getVotes)
 biensRouter.post('/:id/partager', authMiddleware, validateId, partageController.creerPartage)
 biensRouter.get('/:id/partage', authMiddleware, validateId, partageController.getActiveShare)
 biensRouter.delete('/:id/partage', authMiddleware, validateId, partageController.revoquerPartage)

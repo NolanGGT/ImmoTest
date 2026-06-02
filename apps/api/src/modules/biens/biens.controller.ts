@@ -1,13 +1,14 @@
 import { Request, Response, NextFunction } from 'express'
 import { ZodError } from 'zod'
 import { prisma } from '../../lib/prisma'
-import { BienFormulaireSchema, UpdateBienSchema } from './biens.schema'
+import { BienFormulaireSchema, UpdateBienSchema, VoteSchema } from './biens.schema'
 import { NotFoundError } from '../../lib/errors'
 import { sanitizeTextForLLM, isSuspiciousInput } from '../../lib/sanitize'
 import { auditLog } from '../../lib/audit'
 import * as biensService from './biens.service'
 import * as subscriptionService from '../subscription/subscription.service'
 import { scrapeAnnonce } from '../../services/scraping.service'
+import { getScoreQuartier } from '../../services/quartier.service'
 
 // In-memory free analysis tracker for unauthenticated users (MVP — resets on restart)
 const freeAnalysisCache = new Map<string, true>()
@@ -155,8 +156,23 @@ export async function listBiens(req: Request, res: Response, next: NextFunction)
     const page = parseInt(String(req.query.page ?? '1'), 10)
     const limit = parseInt(String(req.query.limit ?? '12'), 10)
     const sort = req.query.sort ? String(req.query.sort) : 'score'
-    const result = await biensService.getBiens(req.user!.id, { search, page, limit, sort })
-    res.json(result)
+
+    // Check if user is a guest with active shared access
+    const sharedAccess = await prisma.sharedAccess.findFirst({
+      where: { guestId: req.user!.id, status: 'ACTIVE' },
+      select: { ownerId: true, owner: { select: { email: true } } },
+    })
+
+    const targetUserId = sharedAccess ? sharedAccess.ownerId : req.user!.id
+    const result = await biensService.getBiens(targetUserId, { search, page, limit, sort })
+
+    res.json({
+      ...result,
+      meta: {
+        isGuestView: !!sharedAccess,
+        ownerEmail: sharedAccess?.owner.email ?? null,
+      },
+    })
   } catch (err) {
     next(err)
   }
@@ -280,6 +296,25 @@ export async function scrape(req: Request, res: Response, next: NextFunction): P
   }
 }
 
+export async function quartier(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = req.params.id as string
+    const bien = await prisma.bien.findFirst({
+      where: { id, userId: req.user!.id },
+      select: { latitude: true, longitude: true },
+    })
+    if (!bien) throw new NotFoundError('Bien introuvable')
+    if (!bien.latitude || !bien.longitude) {
+      res.status(422).json({ error: { code: 'NO_COORDS', message: 'Coordonnées GPS requises pour le score de quartier' } })
+      return
+    }
+    const score = await getScoreQuartier(bien.latitude, bien.longitude)
+    res.json(score)
+  } catch (err) {
+    next(err)
+  }
+}
+
 export async function patchBien(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const id = req.params.id as string
@@ -292,6 +327,64 @@ export async function patchBien(req: Request, res: Response, next: NextFunction)
       res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: err.errors[0]?.message } })
       return
     }
+    next(err)
+  }
+}
+
+export async function voteOnBien(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = req.params.id as string
+    const { vote, comment } = VoteSchema.parse(req.body)
+
+    const bienVote = await prisma.bienVote.upsert({
+      where: { bienId_userId: { bienId: id, userId: req.user!.id } },
+      update: { vote, comment: comment ?? null },
+      create: { bienId: id, userId: req.user!.id, vote, comment: comment ?? null },
+    })
+
+    res.json(bienVote)
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: err.errors[0]?.message } })
+      return
+    }
+    next(err)
+  }
+}
+
+export async function getVotes(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = req.params.id as string
+    const userId = req.user!.id
+
+    const votes = await prisma.bienVote.findMany({
+      where: { bienId: id },
+      include: { user: { select: { email: true } } },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    // Determine partner: the other user involved in the shared access for this bien
+    const bienOwner = await prisma.bien.findFirst({ where: { id }, select: { userId: true } })
+    let partner: { userId: string; email: string } | null = null
+
+    if (bienOwner?.userId) {
+      const ownerId = bienOwner.userId
+      if (userId === ownerId) {
+        // I'm the owner → partner is the guest (if any)
+        const access = await prisma.sharedAccess.findFirst({
+          where: { ownerId, status: 'ACTIVE' },
+          include: { guest: { select: { id: true, email: true } } },
+        })
+        if (access?.guest) partner = { userId: access.guest.id, email: access.guest.email }
+      } else {
+        // I'm the guest → partner is the owner
+        const owner = await prisma.user.findUnique({ where: { id: ownerId }, select: { id: true, email: true } })
+        if (owner) partner = { userId: owner.id, email: owner.email }
+      }
+    }
+
+    res.json({ votes, partner })
+  } catch (err) {
     next(err)
   }
 }

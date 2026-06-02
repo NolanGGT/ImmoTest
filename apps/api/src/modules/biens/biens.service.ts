@@ -35,11 +35,13 @@ function generateTitre(input: {
     : null
 
   const arrMatch = input.codePostal?.match(/^750(\d{2})$/)
-  const arrondissement = arrMatch ? `Paris ${parseInt(arrMatch[1])}e` : null
+  const arrondissement = arrMatch
+    ? (() => { const n = parseInt(arrMatch[1]); return `Paris ${n}e${n === 1 ? 'r' : ''}` })()
+    : null
 
   const lieu = arrondissement ?? input.ville
 
-  return rue ? `${type} · ${rue} · ${lieu}` : `${type} · ${lieu}`
+  return rue && rue.length > 3 ? `${type} · ${rue} · ${lieu}` : `${type} · ${lieu}`
 }
 
 const PRIX_FALLBACK_M2: Record<TypeBien, number> = {
@@ -212,6 +214,11 @@ export async function analyserBien(
       dpe: input.dpe ?? ademeData?.classe ?? null,
       charges: input.charges ?? null,
       anneeConstruction: input.anneeConstruction ?? null,
+      urlSource: input.urlSource ?? null,
+      snapshotTitre: input.snapshotTitre ?? null,
+      snapshotDescription: input.snapshotDescription ?? null,
+      snapshotPhotos: input.snapshotPhotos ?? [],
+      snapshotDate: input.snapshotTitre ? new Date() : null,
       prixM2Bien: input.prix / input.surface,
       prixM2Marche: dvfData?.prixM2MoyenQuartier ?? null,
       joursEnLigne: null,
@@ -274,7 +281,21 @@ export async function relancerAnalyse(
 }
 
 export async function getBienById(id: string, userId: string) {
-  return prisma.bien.findFirst({ where: { id, userId } })
+  // Try as owner first
+  const bien = await prisma.bien.findFirst({ where: { id, userId } })
+  if (bien) return bien
+
+  // Check if user is an active guest for this bien's owner
+  const bienOwner = await prisma.bien.findFirst({ where: { id }, select: { userId: true } })
+  if (!bienOwner?.userId) return null
+
+  const hasAccess = await prisma.sharedAccess.findFirst({
+    where: { ownerId: bienOwner.userId, guestId: userId, status: 'ACTIVE' },
+    select: { id: true },
+  })
+  if (!hasAccess) return null
+
+  return prisma.bien.findFirst({ where: { id } })
 }
 
 export async function getBiens(
@@ -283,6 +304,7 @@ export async function getBiens(
 ): Promise<{
   biens: {
     id: string
+    userId: string | null
     titre: string | null
     ville: string
     typeBien: string
@@ -294,6 +316,8 @@ export async function getBiens(
     createdAt: Date
     latitude: number | null
     longitude: number | null
+    annonceRetiree: boolean
+    votes: Array<{ userId: string; vote: string; comment: string | null }>
   }[]
   pagination: {
     total: number
@@ -321,6 +345,7 @@ export async function getBiens(
       where,
       select: {
         id: true,
+        userId: true,
         titre: true,
         ville: true,
         typeBien: true,
@@ -332,6 +357,8 @@ export async function getBiens(
         createdAt: true,
         latitude: true,
         longitude: true,
+        annonceRetiree: true,
+        votes: { select: { userId: true, vote: true, comment: true } },
       },
       orderBy,
       skip,

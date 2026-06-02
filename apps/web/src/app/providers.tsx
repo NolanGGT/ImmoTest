@@ -10,7 +10,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAuthStore } from '@/stores/auth.store'
 import api from '@/lib/api'
 
-const PUBLIC_ROUTES = ['/login', '/register']
+const PUBLIC_ROUTES = ['/', '/login', '/register', '/onboarding', '/invite', '/partage']
 
 function AuthInitializer({ onReady }: { onReady: () => void }) {
   const { setAuth, clearAuth, accessToken } = useAuthStore()
@@ -21,7 +21,10 @@ function AuthInitializer({ onReady }: { onReady: () => void }) {
     if (hasInitialized.current) return
     hasInitialized.current = true
 
-    if (PUBLIC_ROUTES.some(route => pathname.startsWith(route))) {
+    const isPublic = PUBLIC_ROUTES.some(
+      route => pathname === route || pathname.startsWith(route + '/')
+    )
+    if (isPublic) {
       onReady()
       return
     }

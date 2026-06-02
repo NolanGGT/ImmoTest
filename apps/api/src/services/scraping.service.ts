@@ -149,8 +149,16 @@ function tryNextData(
         ((listing.propertyType as string) ?? (listing.realtyType as string) ?? '').toLowerCase()
       )
 
+      const snapshotTitre = ((listing.title ?? listing.heading) as string | undefined) ?? null
+      const snapshotDescription = ((listing.description as string) || '').slice(0, 2000) || null
+      const rawPhotos = (listing.photos ?? listing.images ?? []) as unknown[]
+      const snapshotPhotos = rawPhotos
+        .slice(0, 5)
+        .map((p: unknown) => (p as Record<string, string>).url ?? (p as Record<string, string>).src ?? (typeof p === 'string' ? p : ''))
+        .filter((url) => typeof url === 'string' && url.startsWith('http'))
+
       return buildResult(
-        { prix, surface, ville, codePostal, dpe, nbPieces, charges, anneeConstruction, typeBien },
+        { prix, surface, ville, codePostal, dpe, nbPieces, charges, anneeConstruction, typeBien, snapshotTitre, snapshotDescription, snapshotPhotos },
         source,
         'next-data-seloger'
       )
@@ -182,6 +190,13 @@ function tryNextData(
       const anneeConstruction = parseInt(getAttr('construction_year') ?? '') || null
       const location = ad.location as Record<string, unknown> | undefined
 
+      const snapshotTitre = ((ad.subject ?? ad.title) as string | undefined) ?? null
+      const snapshotDescription = ((ad.body as string) || '').slice(0, 2000) || null
+      const adImages = ad.images as Record<string, string[]> | undefined
+      const snapshotPhotos = (adImages?.urls_large ?? adImages?.urls ?? [])
+        .slice(0, 5)
+        .filter((url) => typeof url === 'string' && url.startsWith('http'))
+
       return buildResult(
         {
           prix: ((ad.price as number[]) ?? [])[0] ?? null,
@@ -193,6 +208,9 @@ function tryNextData(
           nbPieces,
           typeBien,
           anneeConstruction,
+          snapshotTitre,
+          snapshotDescription,
+          snapshotPhotos,
         },
         source,
         'next-data-leboncoin'
@@ -279,7 +297,16 @@ function tryMetaAndDom(
 
   if (!prix && !surface) return null
 
-  return buildResult({ prix, surface, ville, dpe, typeBien }, source, 'dom-fallback')
+  const snapshotTitre = pageTitle || ogTitle || null
+  const descText = $('[class*="description"]').first().text().trim()
+  const snapshotDescription = (descText || ogDescription).slice(0, 2000) || null
+  const snapshotPhotos = $('[class*="photo"] img, [class*="gallery"] img')
+    .toArray()
+    .slice(0, 5)
+    .map((img) => $(img).attr('src') ?? '')
+    .filter((src) => src.startsWith('http'))
+
+  return buildResult({ prix, surface, ville, dpe, typeBien, snapshotTitre, snapshotDescription, snapshotPhotos }, source, 'dom-fallback')
 }
 
 // ─── DOM helpers ──────────────────────────────────────────────────────────
@@ -374,6 +401,9 @@ type RawData = {
   dpe?: string | null
   charges?: number | null
   anneeConstruction?: number | null
+  snapshotTitre?: string | null
+  snapshotDescription?: string | null
+  snapshotPhotos?: string[]
 }
 
 function buildResult(
@@ -382,7 +412,7 @@ function buildResult(
   method: string
 ): ScrapingResult & { method: string } {
   const data = Object.fromEntries(
-    Object.entries(raw).filter(([, v]) => v !== null && v !== undefined)
+    Object.entries(raw).filter(([, v]) => v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0))
   ) as ScrapingResult['data']
 
   const hasMinimum = !!(data.prix && data.surface)

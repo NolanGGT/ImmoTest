@@ -1,14 +1,24 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const PUBLIC_ROUTES = ['/login', '/register', '/onboarding', '/partage', '/api/auth']
+const PUBLIC_ROUTES = [
+  '/',
+  '/login',
+  '/register',
+  '/onboarding',
+  '/invite',
+  '/partage',
+  '/api/auth',
+]
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  if (PUBLIC_ROUTES.some(route => pathname.startsWith(route))) {
-    return NextResponse.next()
-  }
+  const isPublic = PUBLIC_ROUTES.some(
+    route => pathname === route || pathname.startsWith(route + '/')
+  )
+
+  if (isPublic) return NextResponse.next()
 
   return NextResponse.next()
 }

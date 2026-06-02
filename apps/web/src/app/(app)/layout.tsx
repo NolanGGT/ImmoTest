@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Home, Search, Building2, User, LogOut, Map } from 'lucide-react'
+import { Search, Building2, User, LogOut, Map } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth.store'
 import { useSubscription } from '@/hooks/useSubscription'
@@ -16,14 +16,12 @@ import { cn } from '@/lib/utils'
 import api from '@/lib/api'
 
 const desktopNavLinks = [
-  { href: '/', label: 'Accueil', icon: Home },
   { href: '/analyser', label: 'Analyser', icon: Search },
   { href: '/biens', label: 'Mes biens', icon: Building2 },
   { href: '/carte', label: 'Carte', icon: Map },
 ]
 
 const mobileNavLinks = [
-  { href: '/', label: 'Accueil', icon: Home },
   { href: '/analyser', label: 'Analyser', icon: Search },
   { href: '/carte', label: 'Carte', icon: Map },
   { href: '/biens', label: 'Mes biens', icon: Building2 },
@@ -82,8 +80,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Desktop top navbar — h-14 = 56px */}
       <header className="hidden md:block border-b bg-background sticky top-0 z-50">
         <div className="container max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/" className="font-bold text-lg tracking-tight">
-            ImmoSafe
+          <Link href="/analyser" className="font-bold text-lg tracking-tight">
+            ImmoTest
           </Link>
 
           <nav className="flex items-center gap-1">

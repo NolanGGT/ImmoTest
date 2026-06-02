@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { X, ArrowRight, Trash2, MapPin, Navigation, ChevronDown, Loader2 } from 'lucide-react'
+import { useScoreQuartier } from '@/hooks/useScoreQuartier'
 import { Badge } from '@/components/ui/badge'
 import { formatPrix, getScoreConfig } from '@/lib/score'
 import {
@@ -72,6 +73,8 @@ export function BienPopup({
   onRouteCalculated,
   onRouteClear,
 }: BienPopupProps) {
+  const { data: scoreQuartier } = useScoreQuartier(bien.id, !!(bien.latitude && bien.longitude))
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showItinerary, setShowItinerary] = useState(false)
   const [itineraryMode, setItineraryMode] = useState<TravelMode>('walking')
@@ -209,6 +212,24 @@ export function BienPopup({
           </Badge>
         </div>
       </div>
+
+      {/* Score quartier */}
+      {scoreQuartier?.dataDisponible && (
+        <div className="flex items-center justify-between text-xs px-4 py-2 border-b border-gray-100 dark:border-gray-700">
+          <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1">
+            <MapPin size={10} />
+            Quartier
+          </span>
+          <span className={`font-medium ${
+            scoreQuartier.scoreGlobal >= 75 ? 'text-green-600 dark:text-green-400' :
+            scoreQuartier.scoreGlobal >= 55 ? 'text-blue-600 dark:text-blue-400' :
+            scoreQuartier.scoreGlobal >= 35 ? 'text-orange-500 dark:text-orange-400' :
+            'text-red-500 dark:text-red-400'
+          }`}>
+            {scoreQuartier.label} · {scoreQuartier.scoreGlobal}/100
+          </span>
+        </div>
+      )}
 
       {/* Proximité */}
       {hasProximity && (

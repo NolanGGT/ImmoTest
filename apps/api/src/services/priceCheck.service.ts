@@ -39,9 +39,35 @@ export async function checkPricesForUser(userId: string): Promise<void> {
     try {
       const result = await scrapeAnnonce(bien.urlSource!)
 
+      // Annonce retirée : pas de prix ET pas de surface
+      if (!result.data.prix && !result.data.surface) {
+        await prisma.bien.update({
+          where: { id: bien.id },
+          data: { annonceRetiree: true, annonceDerniereVerif: new Date(), lastCheckedAt: new Date() },
+        })
+
+        await prisma.priceCheck.create({
+          data: {
+            bienId: bien.id,
+            userId,
+            ancienPrix: bien.prix,
+            nouveauPrix: 0,
+            pourcentage: 0,
+            seen: false,
+          },
+        })
+
+        logger.info({ bienId: bien.id, ville: bien.ville }, 'Annonce retirée détectée')
+        continue
+      }
+
       await prisma.bien.update({
         where: { id: bien.id },
-        data: { lastCheckedAt: new Date() },
+        data: {
+          annonceRetiree: false,
+          annonceDerniereVerif: new Date(),
+          lastCheckedAt: new Date(),
+        },
       })
 
       if (!result.data.prix) continue

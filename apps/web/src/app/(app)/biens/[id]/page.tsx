@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, FileDown, Lock, RefreshCw, Share2, Loader2, GitCompare } from 'lucide-react'
+import { ArrowLeft, FileDown, Lock, RefreshCw, Share2, Loader2, GitCompare, FileText, AlertCircle, CheckCircle, ExternalLink } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -15,6 +15,9 @@ import { PointVigilanceItem } from '@/components/immosafe/PointVigilanceItem'
 import { QuestionCard } from '@/components/immosafe/QuestionCard'
 import { ScoreEvolution } from '@/components/immosafe/ScoreEvolution'
 import { ShareModal } from '@/components/immosafe/ShareModal'
+import { ScoreQuartierSection } from '@/components/immosafe/ScoreQuartier'
+import { BienVotes } from '@/components/immosafe/BienVotes'
+import { CoutReel } from '@/components/immosafe/CoutReel'
 import { StaticMap } from '@/components/map/StaticMap'
 import { useBien } from '@/hooks/useBien'
 import { useRelancerAnalyse } from '@/hooks/useRelancerAnalyse'
@@ -26,6 +29,27 @@ import api from '@/lib/api'
 import type { AnalyseResult } from '@immosafe/shared-types'
 
 const NIVEAU_ORDER = { CRITIQUE: 0, ATTENTION: 1, INFO: 2 }
+
+function SnapshotDescription({ description }: { description: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const isLong = description.length > 300
+
+  return (
+    <div>
+      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">
+        {expanded || !isLong ? description : description.slice(0, 300) + '…'}
+      </p>
+      {isLong && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-xs text-indigo-600 hover:underline mt-1"
+        >
+          {expanded ? 'Voir moins' : 'Voir plus'}
+        </button>
+      )}
+    </div>
+  )
+}
 
 const STATUT_OPTIONS = [
   { value: 'EN_COURS', label: 'En cours' },
@@ -54,6 +78,7 @@ export default function BienDetailPage({ params }: { params: Promise<{ id: strin
   const clearStore = useAnalyseStore((s) => s.clear)
   const { isActive } = useSubscription()
   const accessToken = useAuthStore((s) => s.accessToken)
+  const currentUser = useAuthStore((s) => s.user)
 
   const hasStore = storeBienId === id && storeAnalyse !== null && storeBienData !== null
 
@@ -205,6 +230,77 @@ export default function BienDetailPage({ params }: { params: Promise<{ id: strin
         />
       </motion.div>
 
+      {(bien?.urlSource || bien?.snapshotTitre) && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}>
+          <section className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-2">
+                <FileText size={16} className="text-gray-400" />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Annonce originale</span>
+                {bien.annonceRetiree ? (
+                  <span className="flex items-center gap-1 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full text-xs font-medium">
+                    <AlertCircle size={10} />
+                    Annonce retirée
+                  </span>
+                ) : bien.snapshotDate ? (
+                  <span className="flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full text-xs font-medium">
+                    <CheckCircle size={10} />
+                    Snapshot du {new Date(bien.snapshotDate).toLocaleDateString('fr-FR')}
+                  </span>
+                ) : null}
+              </div>
+              {bien.urlSource && (
+                <a
+                  href={bien.annonceRetiree ? undefined : bien.urlSource}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                    bien.annonceRetiree
+                      ? 'bg-gray-100 text-gray-400 dark:bg-gray-700 cursor-not-allowed'
+                      : 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200'
+                  }`}
+                >
+                  <ExternalLink size={12} />
+                  {bien.annonceRetiree ? 'Annonce indisponible' : "Voir l'annonce →"}
+                </a>
+              )}
+            </div>
+
+            {bien.snapshotPhotos && (bien.snapshotPhotos as string[]).length > 0 && (
+              <div className="flex gap-2 p-3 overflow-x-auto">
+                {(bien.snapshotPhotos as string[]).map((photo: string, i: number) => (
+                  <img
+                    key={i}
+                    src={photo}
+                    alt={`Photo ${i + 1}`}
+                    className="h-32 w-auto rounded-lg object-cover flex-shrink-0 cursor-pointer hover:opacity-90 transition"
+                    onClick={() => window.open(photo, '_blank')}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                  />
+                ))}
+              </div>
+            )}
+
+            {(bien.snapshotTitre || bien.snapshotDescription) && (
+              <div className="px-4 pb-4">
+                {bien.snapshotTitre && (
+                  <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{bien.snapshotTitre}</h3>
+                )}
+                {bien.snapshotDescription && (
+                  <SnapshotDescription description={bien.snapshotDescription} />
+                )}
+              </div>
+            )}
+
+            {!bien.snapshotTitre && !bien.snapshotDescription && bien.urlSource && (
+              <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                Aucun snapshot disponible — ce bien a été ajouté manuellement.
+              </div>
+            )}
+          </section>
+        </motion.div>
+      )}
+
       {historiqueScores.length > 0 && bien?.scoreImmoSafe != null && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
           <ScoreEvolution
@@ -249,6 +345,21 @@ export default function BienDetailPage({ params }: { params: Promise<{ id: strin
         <NegociationBlock negociation={analyse.negociation} />
       </motion.div>
 
+      {bien && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.21 }}>
+          <ScoreQuartierSection
+            bienId={id}
+            hasCoords={!!(bien.latitude && bien.longitude)}
+          />
+        </motion.div>
+      )}
+
+      {bien && currentUser && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.215 }}>
+          <BienVotes bienId={id} currentUserId={currentUser.id} />
+        </motion.div>
+      )}
+
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}>
         <h3 className="font-semibold text-sm mb-3">Financement</h3>
         <SimulateurCredit
@@ -268,6 +379,19 @@ export default function BienDetailPage({ params }: { params: Promise<{ id: strin
             score={bien.scoreImmoSafe}
             bienId={id}
             height={200}
+          />
+        </motion.div>
+      )}
+
+      {bien && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24 }}>
+          <CoutReel
+            prix={bien.prix}
+            surface={bien.surface}
+            typeBien={bien.typeBien}
+            dpe={bien.dpe}
+            charges={bien.charges}
+            anneeConstruction={bien.anneeConstruction}
           />
         </motion.div>
       )}

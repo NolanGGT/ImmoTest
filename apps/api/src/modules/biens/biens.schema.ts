@@ -12,6 +12,10 @@ export const BienFormulaireSchema = z
     dpe: z.preprocess(v => typeof v === 'string' ? v.toUpperCase() : v, z.enum(['A', 'B', 'C', 'D', 'E', 'F', 'G']).optional()),
     charges: z.number().int().min(0).max(10000).optional(),
     anneeConstruction: z.number().int().min(1800).max(2030).optional(),
+    urlSource: z.string().max(500).optional(),
+    snapshotTitre: z.string().max(500).optional(),
+    snapshotDescription: z.string().max(2100).optional(),
+    snapshotPhotos: z.array(z.string().max(500)).max(5).optional(),
   })
   .superRefine((data, ctx) => {
     const prixM2 = data.prix / data.surface
@@ -30,6 +34,13 @@ export const BienFormulaireSchema = z
   })
 
 export type BienFormulaireInput = z.infer<typeof BienFormulaireSchema>
+
+export const VoteSchema = z.object({
+  vote: z.enum(['LOVE', 'LIKE', 'DISLIKE']),
+  comment: z.string().max(500).optional(),
+})
+
+export type VoteInput = z.infer<typeof VoteSchema>
 
 export const UpdateBienSchema = z.object({
   isFavorite: z.boolean().optional(),

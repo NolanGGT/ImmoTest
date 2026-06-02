@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Star, Trash2 } from 'lucide-react'
+import { Star, Trash2, AlertCircle } from 'lucide-react'
 import { ScoreGauge } from './ScoreGauge'
 import { formatPrix } from '@/lib/score'
 import { Badge } from '@/components/ui/badge'
@@ -21,8 +21,15 @@ const STATUT_VARIANT: Record<string, 'default' | 'secondary' | 'success' | 'warn
   ABANDONNE: 'secondary',
 }
 
+interface VoteSummary {
+  userId: string
+  vote: string
+  comment: string | null
+}
+
 interface BienSummary {
   id: string
+  userId?: string | null
   titre: string | null
   ville: string
   typeBien: string
@@ -32,6 +39,8 @@ interface BienSummary {
   isFavorite: boolean
   statut: string
   createdAt: string
+  annonceRetiree?: boolean
+  votes?: VoteSummary[]
 }
 
 interface Props {
@@ -53,7 +62,7 @@ export function BienCard({
   onToggleCompare,
   compareMaxReached,
 }: Props) {
-  const { id, titre, ville, typeBien, prix, surface, scoreImmoSafe, isFavorite, statut } = bien
+  const { id, titre, ville, typeBien, prix, surface, scoreImmoSafe, isFavorite, statut, annonceRetiree, votes } = bien
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const isDisabled = compareMode && compareMaxReached && !isSelectedForCompare
@@ -118,10 +127,25 @@ export function BienCard({
             </button>
           )}
         </div>
-        <div className="mt-2 flex items-center justify-between">
+        <div className="mt-2 flex items-center gap-2 flex-wrap">
           <Badge variant={STATUT_VARIANT[statut] ?? 'outline'} className="text-[10px]">
             {STATUT_LABELS[statut] ?? statut}
           </Badge>
+          {annonceRetiree && (
+            <span className="flex items-center gap-1 px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-500 rounded text-xs">
+              <AlertCircle size={9} />
+              Annonce retirée
+            </span>
+          )}
+          {votes && votes.length > 0 && (
+            <span className="flex gap-0.5">
+              {votes.map((v) => (
+                <span key={v.userId} className="text-sm" title={v.comment ?? undefined}>
+                  {v.vote === 'LOVE' ? '❤️' : v.vote === 'LIKE' ? '👍' : '👎'}
+                </span>
+              ))}
+            </span>
+          )}
         </div>
       </div>
     </div>

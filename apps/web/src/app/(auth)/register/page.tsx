@@ -1,7 +1,8 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -24,6 +25,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { useAuth } from '@/hooks/useAuth'
+import api from '@/lib/api'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3011'
 
@@ -61,8 +63,10 @@ function GoogleIcon() {
   )
 }
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const inviteToken = searchParams.get('invite')
   const { register, isLoading, error } = useAuth()
 
   const form = useForm<RegisterFormData>({
@@ -72,7 +76,18 @@ export default function RegisterPage() {
 
   const onSubmit = async (data: RegisterFormData) => {
     const success = await register(data.email, data.password)
-    if (success) router.push('/analyser')
+    if (!success) return
+
+    if (inviteToken) {
+      try {
+        await api.get(`/api/shared-access/accept/${inviteToken}`)
+      } catch {
+        // Token invalid/expired — continue to normal onboarding
+      }
+      router.push('/biens')
+    } else {
+      router.push('/analyser')
+    }
   }
 
   return (
@@ -147,5 +162,13 @@ export default function RegisterPage() {
         </CardFooter>
       </Card>
     </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="h-8 w-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" /></div>}>
+      <RegisterForm />
+    </Suspense>
   )
 }

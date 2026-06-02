@@ -16,6 +16,7 @@ import { adminRouter } from './modules/admin/admin.router'
 import { partageRouter } from './modules/partage/partage.router'
 import { rapportsRouter } from './modules/rapports/rapports.router'
 import { personalPointsRouter } from './modules/personalPoints/personalPoints.router'
+import { sharedAccessRouter } from './modules/sharedAccess/sharedAccess.router'
 import { stripeWebhookHandler } from './webhooks/stripe.webhook'
 import { generalRateLimit } from './middlewares/rateLimit.middleware'
 import { authMiddleware } from './middlewares/auth.middleware'
@@ -74,6 +75,7 @@ app.use('/api/admin', authMiddleware, requireAdmin, adminRouter)
 app.use('/api/partage', partageRouter)
 app.use('/api/rapports', rapportsRouter)
 app.use('/api/personal-points', personalPointsRouter)
+app.use('/api/shared-access', sharedAccessRouter)
 
 app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof AppError) {

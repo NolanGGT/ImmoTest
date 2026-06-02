@@ -79,6 +79,25 @@ export interface BienFormulaire {
   charges?: number
   anneeConstruction?: number
   urlSource?: string
+  snapshotTitre?: string
+  snapshotDescription?: string
+  snapshotPhotos?: string[]
+}
+
+export interface ScoreQuartier {
+  scoreGlobal: number
+  niveau: 'EXCELLENT' | 'BON' | 'MOYEN' | 'FAIBLE'
+  label: string
+  revenuMedian: number | null
+  revenuNiveau: string | null
+  revenuVsNationale: number | null
+  tauxCambriolages: number | null
+  tauxVols: number | null
+  securiteNiveau: string | null
+  codeCommune: string | null
+  nomCommune: string | null
+  sourceDate: string
+  dataDisponible: boolean
 }
 
 export interface ScrapingResult {
@@ -98,6 +117,9 @@ export interface ScrapingResult {
     anneeConstruction?: number
     titre?: string
     joursEnLigne?: number
+    snapshotTitre?: string
+    snapshotDescription?: string
+    snapshotPhotos?: string[]
   }
   error?: string
 }

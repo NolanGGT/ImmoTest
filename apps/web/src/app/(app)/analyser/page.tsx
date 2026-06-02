@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -33,6 +33,9 @@ const formSchema = z.object({
   charges: z.coerce.number().int().min(0).max(10000).optional().nullable().transform(val => val ?? undefined),
   anneeConstruction: z.coerce.number().int().min(1800).max(2026).optional().nullable().transform(val => val ?? undefined),
   urlSource: z.string().optional(),
+  snapshotTitre: z.string().optional(),
+  snapshotDescription: z.string().optional(),
+  snapshotPhotos: z.array(z.string()).optional(),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -56,12 +59,15 @@ const EMPTY_DEFAULTS = {
   charges: undefined,
   anneeConstruction: undefined,
   urlSource: undefined,
+  snapshotTitre: undefined,
+  snapshotDescription: undefined,
+  snapshotPhotos: undefined,
 }
 
 // Fields required for analysis that may be missing from a scrape
 const REQUIRED_SCRAPED: Array<keyof FormData> = ['prix', 'surface', 'ville', 'codePostal']
 
-export default function AnalyserPage() {
+function AnalyserContent() {
   const [step, setStep] = useState<AnalyserStep>('form')
   const [mode, setMode] = useState<FormMode>('url')
   const [showUpsell, setShowUpsell] = useState(false)
@@ -74,6 +80,8 @@ export default function AnalyserPage() {
   const [scrapedMissingFields, setScrapedMissingFields] = useState<string[]>([])
 
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const fromLanding = searchParams.get('source') === 'landing'
 
   const analyser = useAnalyser(() => {
     setShowUpsell(true)
@@ -120,6 +128,10 @@ export default function AnalyserPage() {
         if (d.charges)           setValue('charges', d.charges)
         if (d.anneeConstruction) setValue('anneeConstruction', d.anneeConstruction)
         setValue('urlSource', url.trim())
+
+        if (d.snapshotTitre)              setValue('snapshotTitre', d.snapshotTitre)
+        if (d.snapshotDescription)        setValue('snapshotDescription', d.snapshotDescription)
+        if (d.snapshotPhotos?.length)     setValue('snapshotPhotos', d.snapshotPhotos)
 
         if (result.success) {
           // Check whether required fields came through
@@ -198,6 +210,16 @@ export default function AnalyserPage() {
       {step === 'loading' && <LoadingAnalyse isFirstAnalysis={isFirstAnalysis} />}
 
       <div className="max-w-lg mx-auto">
+        {/* Banner landing → analyse gratuite (friction #4) */}
+        {fromLanding && isFirstAnalysis && (
+          <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-3 mb-4">
+            <CheckCircle2 size={16} className="text-green-600 shrink-0" />
+            <p className="text-sm text-green-700 dark:text-green-300">
+              🎉 Votre première analyse est offerte — sans carte bancaire.
+            </p>
+          </div>
+        )}
+
         <AnimatePresence mode="wait">
           {step === 'confirm' ? (
             <motion.div
@@ -626,5 +648,13 @@ export default function AnalyserPage() {
         </DialogContent>
       </Dialog>
     </>
+  )
+}
+
+export default function AnalyserPage() {
+  return (
+    <Suspense fallback={null}>
+      <AnalyserContent />
+    </Suspense>
   )
 }

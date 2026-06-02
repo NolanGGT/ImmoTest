@@ -8,7 +8,11 @@ import { useSubscription } from '@/hooks/useSubscription'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { useSharedAccess, useInvite, useRevokeAccess } from '@/hooks/useSharedAccess'
+import { Users, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 function formatDate(iso: string): string {
   return new Intl.DateTimeFormat('fr-FR', {
@@ -19,6 +23,121 @@ function formatDate(iso: string): string {
 }
 
 type Notification = { type: 'success' | 'error' | 'info'; message: string }
+
+function SharedAccessSection() {
+  const { data, isLoading } = useSharedAccess()
+  const invite = useInvite()
+  const revoke = useRevokeAccess()
+  const [email, setEmail] = useState('')
+
+  const activeInvitations = data?.owned.filter((i) => i.status !== 'REVOKED') ?? []
+  const canInvite = activeInvitations.length < 3
+
+  const handleInvite = () => {
+    if (!email.trim()) return
+    invite.mutate(email.trim(), {
+      onSuccess: () => {
+        toast.success(`Invitation envoyée à ${email}`)
+        setEmail('')
+      },
+      onError: (err: unknown) => {
+        const code = (err as { response?: { data?: { error?: { code?: string } } } })?.response?.data?.error?.code
+        const msg =
+          code === 'ALREADY_INVITED' ? 'Cet email a déjà été invité.' :
+          code === 'MAX_INVITATIONS' ? 'Maximum 3 invités actifs.' :
+          code === 'INVALID_EMAIL' ? 'Vous ne pouvez pas vous inviter vous-même.' :
+          "Erreur lors de l'envoi."
+        toast.error(msg)
+      },
+    })
+  }
+
+  const STATUS_LABEL: Record<string, string> = {
+    ACTIVE: '✅ Accès actif',
+    PENDING: '⏳ Invitation en attente',
+    REVOKED: 'Révoqué',
+  }
+  const STATUS_COLOR: Record<string, string> = {
+    ACTIVE: 'text-green-600',
+    PENDING: 'text-orange-500',
+    REVOKED: 'text-gray-400',
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Users size={18} className="text-indigo-500" />
+          Recherche partagée
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {/* Accès reçu (guest) */}
+        {data?.received && (
+          <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl mb-2">
+            <p className="text-sm text-indigo-700 dark:text-indigo-300">
+              👥 Vous consultez la recherche de{' '}
+              <strong>{data.received.owner.email.split('@')[0]}</strong>
+            </p>
+          </div>
+        )}
+
+        {/* Invitations envoyées */}
+        {isLoading ? (
+          <div className="h-10 bg-muted animate-pulse rounded-xl" />
+        ) : (
+          data?.owned.map((inv) => (
+            <div
+              key={inv.id}
+              className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl"
+            >
+              <div>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{inv.guestEmail}</p>
+                <p className={`text-xs ${STATUS_COLOR[inv.status] ?? 'text-gray-400'}`}>
+                  {STATUS_LABEL[inv.status] ?? inv.status}
+                </p>
+              </div>
+              {inv.status !== 'REVOKED' && (
+                <button
+                  onClick={() => revoke.mutate(inv.id)}
+                  disabled={revoke.isPending}
+                  className="text-xs text-red-400 hover:text-red-600 transition"
+                >
+                  Révoquer
+                </button>
+              )}
+            </div>
+          ))
+        )}
+
+        {/* Formulaire d'invitation */}
+        {canInvite && (
+          <div className="flex gap-2 pt-1">
+            <Input
+              type="email"
+              placeholder="Email de votre partenaire…"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleInvite()}
+              className="flex-1"
+            />
+            <Button
+              onClick={handleInvite}
+              disabled={!email.trim() || invite.isPending}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0"
+            >
+              {invite.isPending ? <Loader2 size={14} className="animate-spin" /> : 'Inviter'}
+            </Button>
+          </div>
+        )}
+
+        {!canInvite && (
+          <p className="text-xs text-muted-foreground">Maximum 3 invités actifs atteint.</p>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
 
 function ProfilContent() {
   const router = useRouter()
@@ -117,6 +236,9 @@ function ProfilContent() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Bloc partage */}
+      <SharedAccessSection />
 
       {/* Bloc abonnement */}
       <Card>

@@ -13,6 +13,18 @@ enum UserRole {
   ADMIN
 }
 
+enum SharedAccessStatus {
+  PENDING
+  ACTIVE
+  REVOKED
+}
+
+enum VoteType {
+  LOVE
+  LIKE
+  DISLIKE
+}
+
 model User {
   id               String        @id @default(cuid())
   email            String        @unique
@@ -28,6 +40,9 @@ model User {
   passwordResetTokens PasswordResetToken[]
   twoFactorAuth    TwoFactorAuth?
   personalPoints   PersonalPoint[]
+  sharedAccessOwner SharedAccess[] @relation("SharedAccessOwner")
+  sharedAccessGuest SharedAccess[] @relation("SharedAccessGuest")
+  votes            BienVote[]
 }
 
 model Subscription {
@@ -79,11 +94,19 @@ model Bien {
   lastCheckedAt    DateTime?
   lastKnownPrix    Int?
 
+  snapshotTitre       String?
+  snapshotDescription String?   @db.Text
+  snapshotPhotos      Json      @default("[]")
+  snapshotDate        DateTime?
+  annonceRetiree      Boolean   @default(false)
+  annonceDerniereVerif DateTime?
+
   statut         BienStatut      @default(EN_COURS)
   isFavorite     Boolean         @default(false)
   rapport        Rapport?
   sharedAnalyses SharedAnalyse[]
   priceChecks    PriceCheck[]
+  votes          BienVote[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 }
@@ -190,6 +213,38 @@ model PersonalPoint {
   createdAt     DateTime @default(now())
 
   @@index([userId])
+}
+
+model SharedAccess {
+  id         String             @id @default(cuid())
+  ownerId    String
+  owner      User               @relation("SharedAccessOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  guestId    String?
+  guest      User?              @relation("SharedAccessGuest", fields: [guestId], references: [id], onDelete: SetNull)
+  guestEmail String
+  status     SharedAccessStatus @default(PENDING)
+  token      String             @unique @default(cuid())
+  createdAt  DateTime           @default(now())
+  expiresAt  DateTime
+
+  @@unique([ownerId, guestEmail])
+  @@index([guestId])
+  @@index([token])
+}
+
+model BienVote {
+  id        String   @id @default(cuid())
+  bienId    String
+  bien      Bien     @relation(fields: [bienId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vote      VoteType
+  comment   String?  @db.VarChar(500)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([bienId, userId])
+  @@index([bienId])
 }
 
 model AuditLog {

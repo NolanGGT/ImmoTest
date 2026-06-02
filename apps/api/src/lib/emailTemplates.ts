@@ -136,6 +136,31 @@ export function resetMotDePasse(params: {
   `)
 }
 
+export function invitationPartage(params: {
+  ownerEmail: string
+  inviteUrl: string
+  expiresIn: string
+}): string {
+  const ownerName = params.ownerEmail.split('@')[0]
+  return layout(`
+    <p>Bonjour,</p>
+    <p><strong>${ownerName}</strong> vous invite à rejoindre sa recherche immobilière sur ImmoSafe.</p>
+    <p>En acceptant, vous pourrez :</p>
+    <ul style="padding-left:20px;margin:12px 0;">
+      <li>👀 Voir tous les biens analysés par ${ownerName}</li>
+      <li>❤️ Voter et donner votre avis sur chaque bien</li>
+      <li>💬 Laisser des commentaires</li>
+    </ul>
+    <div style="text-align:center;">
+      <a href="${params.inviteUrl}" style="${BUTTON}">Accepter l'invitation →</a>
+    </div>
+    <p style="font-size:13px;color:#6b7280;margin-top:24px;">
+      Cette invitation expire dans <strong>${params.expiresIn}</strong>.<br>
+      Si vous n'attendiez pas cet email, ignorez-le simplement.
+    </p>
+  `)
+}
+
 export function formatDate(date: Date): string {
   return date.toLocaleDateString('fr-FR', {
     day: 'numeric',
