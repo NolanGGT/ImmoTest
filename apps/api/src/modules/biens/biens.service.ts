@@ -25,6 +25,8 @@ function generateTitre(input: {
   adresse?: string | null
   ville: string
   codePostal?: string | null
+  prix?: number | null
+  surface?: number | null
 }): string {
   const type =
     input.typeBien === 'APPARTEMENT' ? 'Appartement' :
@@ -41,7 +43,14 @@ function generateTitre(input: {
 
   const lieu = arrondissement ?? input.ville
 
-  return rue && rue.length > 3 ? `${type} · ${rue} · ${lieu}` : `${type} · ${lieu}`
+  if (rue && rue.length > 3) return `${type} · ${rue} · ${lieu}`
+
+  if (input.prix && input.surface) {
+    const prixM2 = Math.round(input.prix / input.surface)
+    return `${type} · ${prixM2.toLocaleString('fr-FR')}€/m² · ${lieu}`
+  }
+
+  return `${type} · ${lieu}`
 }
 
 const PRIX_FALLBACK_M2: Record<TypeBien, number> = {
@@ -201,7 +210,7 @@ export async function analyserBien(
   const bien = await prisma.bien.create({
     data: {
       userId: userId ?? null,
-      titre: generateTitre({ typeBien: input.typeBien, adresse: input.adresse, ville: input.ville, codePostal: input.codePostal }),
+      titre: generateTitre({ typeBien: input.typeBien, adresse: input.adresse, ville: input.ville, codePostal: input.codePostal, prix: input.prix, surface: input.surface }),
       prix: input.prix,
       surface: input.surface,
       typeBien: input.typeBien,
@@ -267,7 +276,7 @@ export async function relancerAnalyse(
   await prisma.bien.update({
     where: { id: bienId },
     data: {
-      titre: generateTitre({ typeBien: bien.typeBien, adresse: bien.adresse, ville: bien.ville, codePostal: bien.codePostal }),
+      titre: generateTitre({ typeBien: bien.typeBien, adresse: bien.adresse, ville: bien.ville, codePostal: bien.codePostal, prix: bien.prix, surface: bien.surface }),
       latitude: coords?.lat ?? bien.latitude,
       longitude: coords?.lon ?? bien.longitude,
       prixM2Marche: dvfData?.prixM2MoyenQuartier ?? bien.prixM2Marche,

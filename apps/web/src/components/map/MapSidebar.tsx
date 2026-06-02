@@ -535,7 +535,11 @@ export function MapSidebar({
                   />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium truncate">{bien.ville}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{formatPrix(bien.prix)}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                      {bien.prix && bien.surface
+                        ? `${Math.round(bien.prix / bien.surface).toLocaleString('fr-FR')} €/m²`
+                        : formatPrix(bien.prix)}
+                    </p>
                   </div>
                   <span className={`text-xs font-bold flex-shrink-0 ${cfg.color}`}>
                     {bien.scoreImmoSafe}
