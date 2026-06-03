@@ -4,7 +4,7 @@ import mapboxgl from 'mapbox-gl'
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { useTheme } from 'next-themes'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Layers, Maximize2, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { Layers, Crosshair, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { MapSidebar } from './MapSidebar'
 import { BienPopup } from './BienPopup'
 import { ScoreLegend } from './ScoreLegend'
@@ -942,9 +942,11 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
         map.fitBounds(bounds, { padding: 80, maxZoom: 14 })
       }
 
-      // Manual cluster click → zoom to detail level
-      map.on('click', 'manual-cluster', () => {
-        map.easeTo({ zoom: 11, duration: 600 })
+      // Manual cluster click → zoom in centered on the cluster
+      map.on('click', 'manual-cluster', (e) => {
+        if (!e.features?.length) return
+        const coords = (e.features[0].geometry as GeoJSON.Point).coordinates as [number, number]
+        map.easeTo({ center: coords, zoom: 11, duration: 600 })
       })
 
       // Individual bien click → toggle popup
@@ -1203,10 +1205,10 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
           <button
             type="button"
             onClick={fitBounds}
-            className="bg-white rounded-lg shadow-md px-3 py-2 text-xs font-medium hover:bg-gray-50 transition-colors flex items-center gap-1.5"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-md hover:shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
           >
-            <Maximize2 size={14} />
-            Tout voir
+            <Crosshair size={14} />
+            Recentrer
           </button>
         </div>
 
