@@ -117,27 +117,38 @@ function injectFloatingButton(data) {
 
   document.body.appendChild(btn)
 
-  // Spring bounce entrance
+  // Spring bounce entrance with double rebound
   btn.style.opacity = '0'
-  btn.style.transform = 'translateY(40px) scale(0.8)'
+  btn.style.transform = 'translateY(100px) scale(0.5)'
   setTimeout(() => {
-    btn.style.transition = 'opacity 0.4s ease, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)'
+    btn.style.transition = 'opacity 0.5s ease, transform 0.6s cubic-bezier(0.34, 1.8, 0.64, 1)'
     btn.style.opacity = '1'
     btn.style.transform = 'translateY(0) scale(1)'
-  }, 100)
+
+    setTimeout(() => {
+      btn.style.transition = 'transform 0.3s cubic-bezier(0.34, 2.0, 0.64, 1)'
+      btn.style.transform = 'translateY(-8px) scale(1.05)'
+      setTimeout(() => {
+        btn.style.transition = 'transform 0.25s cubic-bezier(0.34, 1.5, 0.64, 1)'
+        btn.style.transform = 'translateY(0) scale(1)'
+      }, 300)
+    }, 600)
+  }, 50)
 }
 
 function tryInject() {
   const site = detectSite()
+  console.log('[ImmoTest] site détecté:', site, window.location.href)
   if (!site) return
 
   document.getElementById('immotest-btn')?.remove()
 
   const data = extractData()
+  console.log('[ImmoTest] data extraite:', data)
   injectFloatingButton(data || { urlSource: window.location.href })
 }
 
-setTimeout(tryInject, 300)
+setTimeout(tryInject, 200)
 
 // Message listener for popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
