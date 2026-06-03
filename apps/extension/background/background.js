@@ -21,7 +21,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
     chrome.notifications.create(`listing-${tabId}`, {
       type: 'basic',
-      iconUrl: 'icons/icon48.png',
+      iconUrl: chrome.runtime.getURL('icons/icon48.png'),
       title: 'ImmoTest',
       message: 'Annonce détectée — cliquez pour analyser ce bien',
       priority: 1,
