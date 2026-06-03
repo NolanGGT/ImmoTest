@@ -3,23 +3,27 @@ import * as cheerio from 'cheerio'
 import { logger } from '../lib/logger'
 import type { ScrapingResult } from '@immosafe/shared-types'
 
-const USER_AGENT =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
-  'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
-
-const HTTP_HEADERS = {
-  'User-Agent': USER_AGENT,
-  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-  'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
+const BROWSER_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xhtml+xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
   'Accept-Encoding': 'gzip, deflate, br',
-  'Cache-Control': 'no-cache',
-  Pragma: 'no-cache',
+  'Connection': 'keep-alive',
+  'Upgrade-Insecure-Requests': '1',
   'Sec-Fetch-Dest': 'document',
   'Sec-Fetch-Mode': 'navigate',
   'Sec-Fetch-Site': 'none',
   'Sec-Fetch-User': '?1',
-  'Upgrade-Insecure-Requests': '1',
-  Referer: 'https://www.leboncoin.fr/',
+  'Cache-Control': 'max-age=0',
+  'sec-ch-ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+  'sec-ch-ua-mobile': '?0',
+  'sec-ch-ua-platform': '"Windows"',
+}
+
+const LEBONCOIN_HEADERS = {
+  ...BROWSER_HEADERS,
+  'Referer': 'https://www.leboncoin.fr/',
+  'Origin': 'https://www.leboncoin.fr',
 }
 
 const BLOCKED_PATTERNS = ['captcha', 'challenge', 'cf-browser-verification']
@@ -50,21 +54,25 @@ export async function scrapeAnnonce(url: string): Promise<ScrapingResult> {
   }
 
   try {
+    if (source === 'leboncoin') {
+      await new Promise((r) => setTimeout(r, 500 + Math.random() * 1000))
+    }
+
     const response = await axios.get<string>(url, {
-      headers: HTTP_HEADERS,
-      timeout: 8000,
-      maxRedirects: 3,
+      headers: source === 'leboncoin' ? LEBONCOIN_HEADERS : BROWSER_HEADERS,
+      timeout: 15000,
+      maxRedirects: 5,
       validateStatus: (status) => status < 500,
     })
 
     if (response.status === 403 || (source === 'leboncoin' && isBlocked(response.data as string))) {
       logger.warn({ url, status: response.status, source }, 'Scraping: bloqué')
-      return { success: false, partial: false, source, data: {}, error: 'blocked' }
+      return { success: false, partial: true, source, data: {}, error: 'blocked' }
     }
 
     if (response.status >= 400) {
       logger.warn({ url, status: response.status }, 'Scraping: page inaccessible')
-      return { success: false, partial: false, source, data: {}, error: `http_${response.status}` }
+      return { success: false, partial: true, source, data: {}, error: `http_${response.status}` }
     }
 
     const $ = cheerio.load(response.data)
@@ -75,7 +83,7 @@ export async function scrapeAnnonce(url: string): Promise<ScrapingResult> {
       tryMetaAndDom($, source)
 
     if (!result) {
-      return { success: false, partial: false, source, data: {}, error: 'no_data' }
+      return { success: false, partial: true, source, data: {}, error: 'no_data' }
     }
 
     logger.info(
@@ -91,7 +99,7 @@ export async function scrapeAnnonce(url: string): Promise<ScrapingResult> {
     logger.warn({ url, source, error: err.message }, 'Scraping échoué')
     return {
       success: false,
-      partial: false,
+      partial: true,
       source,
       data: {},
       error: isTimeout ? 'timeout' : 'network_error',
