@@ -127,14 +127,17 @@ function injectFloatingButton(data) {
   }, 500)
 }
 
-// Inject floating button on listing pages
-const site = detectSite()
-if (site) {
-  setTimeout(() => {
-    const data = extractData()
-    if (data) injectFloatingButton(data)
-  }, 1500)
+function tryInject() {
+  const site = detectSite()
+  if (!site) return
+
+  document.getElementById('immotest-btn')?.remove()
+
+  const data = extractData()
+  injectFloatingButton(data || { urlSource: window.location.href })
 }
+
+setTimeout(tryInject, 1500)
 
 // Message listener for popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {

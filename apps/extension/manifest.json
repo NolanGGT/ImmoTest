@@ -23,7 +23,6 @@
   "content_scripts": [
     {
       "matches": [
-        "https://www.leboncoin.fr/annonces/*",
         "https://www.leboncoin.fr/ad/*",
         "https://www.seloger.com/*",
         "https://www.pap.fr/*",
