@@ -52,24 +52,24 @@ function injectFloatingButton(data) {
   btn.querySelector('#immotest-btn-inner').style.cssText = `
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     background: #4f46e5;
     color: white;
-    padding: 12px 16px;
-    border-radius: 14px;
+    padding: 14px 20px;
+    border-radius: 16px;
     border: 2px solid rgba(255,255,255,0.2);
   `
 
   btn.querySelector('#immotest-btn-logo').style.cssText = `
-    width: 32px;
-    height: 32px;
+    width: 38px;
+    height: 38px;
     background: rgba(255,255,255,0.2);
-    border-radius: 8px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 800;
-    font-size: 13px;
+    font-size: 15px;
     flex-shrink: 0;
   `
 
@@ -81,12 +81,12 @@ function injectFloatingButton(data) {
 
   btn.querySelector('#immotest-btn-title').style.cssText = `
     font-weight: 700;
-    font-size: 14px;
+    font-size: 15px;
     white-space: nowrap;
   `
 
   const sub = btn.querySelector('#immotest-btn-sub')
-  if (sub) sub.style.cssText = `font-size: 12px; opacity: 0.8;`
+  if (sub) sub.style.cssText = `font-size: 13px; opacity: 0.85;`
 
   btn.querySelector('#immotest-btn-arrow').style.cssText = `
     font-size: 18px;
