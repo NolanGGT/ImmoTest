@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Générer les icônes ImmoTest</title>
+  <style>
+    body { font-family: sans-serif; padding: 24px; background: #0f172a; color: #f1f5f9; }
+    h2 { margin-bottom: 8px; }
+    p { color: #94a3b8; margin-bottom: 16px; }
+    #canvases { display: flex; gap: 16px; align-items: flex-end; margin-bottom: 16px; }
+    canvas { border: 1px solid #334155; border-radius: 4px; }
+    button {
+      padding: 10px 20px; background: #4f46e5; color: white;
+      border: none; border-radius: 8px; font-size: 14px; cursor: pointer;
+    }
+    button:hover { background: #4338ca; }
+    #status { margin-top: 12px; color: #4ade80; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h2>Générer les icônes ImmoTest</h2>
+  <p>Ouvrez ce fichier dans votre navigateur, puis cliquez sur le bouton pour télécharger les 4 icônes PNG.</p>
+  <div id="canvases"></div>
+  <button onclick="generateAll()">Télécharger les 4 icônes</button>
+  <div id="status"></div>
+
+  <script>
+    const sizes = [16, 32, 48, 128]
+
+    function drawIcon(canvas) {
+      const size = canvas.width
+      const ctx = canvas.getContext('2d')
+      const radius = size * 0.18
+
+      // Background indigo
+      ctx.fillStyle = '#4f46e5'
+      ctx.beginPath()
+      ctx.moveTo(radius, 0)
+      ctx.lineTo(size - radius, 0)
+      ctx.quadraticCurveTo(size, 0, size, radius)
+      ctx.lineTo(size, size - radius)
+      ctx.quadraticCurveTo(size, size, size - radius, size)
+      ctx.lineTo(radius, size)
+      ctx.quadraticCurveTo(0, size, 0, size - radius)
+      ctx.lineTo(0, radius)
+      ctx.quadraticCurveTo(0, 0, radius, 0)
+      ctx.closePath()
+      ctx.fill()
+
+      // "IT" text
+      ctx.fillStyle = '#ffffff'
+      ctx.font = `800 ${Math.floor(size * 0.46)}px Arial, sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText('IT', size / 2, size * 0.52)
+    }
+
+    // Render previews on load
+    window.addEventListener('load', () => {
+      const container = document.getElementById('canvases')
+      sizes.forEach(size => {
+        const wrap = document.createElement('div')
+        wrap.style.textAlign = 'center'
+        const canvas = document.createElement('canvas')
+        canvas.width = size
+        canvas.height = size
+        canvas.style.width = Math.max(size, 48) + 'px'
+        canvas.style.height = Math.max(size, 48) + 'px'
+        canvas.style.imageRendering = 'pixelated'
+        drawIcon(canvas)
+        const label = document.createElement('div')
+        label.style.cssText = 'color:#64748b;font-size:11px;margin-top:4px'
+        label.textContent = `${size}×${size}`
+        wrap.appendChild(canvas)
+        wrap.appendChild(label)
+        container.appendChild(wrap)
+      })
+    })
+
+    function generateAll() {
+      sizes.forEach((size, i) => {
+        const canvas = document.createElement('canvas')
+        canvas.width = size
+        canvas.height = size
+        drawIcon(canvas)
+
+        setTimeout(() => {
+          const a = document.createElement('a')
+          a.download = `icon${size}.png`
+          a.href = canvas.toDataURL('image/png')
+          a.click()
+        }, i * 150)
+      })
+
+      document.getElementById('status').textContent =
+        '✓ 4 icônes téléchargées — déplacez-les dans apps/extension/icons/'
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ImmoTest</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="app">
+
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">IT</div>
+        <span>ImmoTest</span>
+      </div>
+    </div>
+
+    <div id="state-not-listing" class="state hidden">
+      <div class="icon">🏠</div>
+      <p>Naviguez sur une annonce immobilière pour l'analyser.</p>
+      <p class="sites-supported">LeBonCoin · SeLoger · PAP · Logic-Immo</p>
+    </div>
+
+    <div id="state-loading" class="state hidden">
+      <div class="spinner"></div>
+      <p>Lecture de l'annonce...</p>
+    </div>
+
+    <div id="state-ready" class="state hidden">
+      <div class="bien-preview">
+        <div class="bien-type" id="preview-type">Appartement</div>
+        <div class="bien-prix" id="preview-prix">—</div>
+        <div class="bien-details" id="preview-details">—</div>
+        <div class="bien-ville" id="preview-ville">—</div>
+      </div>
+
+      <button id="btn-analyze" class="btn-primary">
+        <span>🎯</span>
+        Analyser avec ImmoTest
+      </button>
+
+      <p class="hint">Vous serez redirigé vers ImmoTest avec les données pré-remplies.</p>
+    </div>
+
+    <div id="state-partial" class="state hidden">
+      <div class="icon">⚠️</div>
+      <p>Certaines données n'ont pas pu être lues.</p>
+      <button id="btn-analyze-partial" class="btn-secondary">
+        Analyser quand même →
+      </button>
+      <button id="btn-manual" class="btn-outline">
+        Saisir manuellement
+      </button>
+    </div>
+
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

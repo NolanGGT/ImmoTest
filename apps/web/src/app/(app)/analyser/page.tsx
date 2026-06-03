@@ -82,6 +82,7 @@ function AnalyserContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const fromLanding = searchParams.get('source') === 'landing'
+  const fromExtension = searchParams.get('source') === 'extension'
 
   const analyser = useAnalyser(() => {
     setShowUpsell(true)
@@ -96,6 +97,47 @@ function AnalyserContent() {
   })
 
   const { setValue } = form
+
+  // Pre-fill form when coming from the Chrome extension
+  useEffect(() => {
+    if (!fromExtension) return
+
+    const numericFields = ['prix', 'surface', 'nbPieces', 'charges', 'anneeConstruction'] as const
+    const textFields = ['urlSource', 'ville', 'codePostal', 'adresse', 'snapshotTitre', 'snapshotDescription'] as const
+
+    numericFields.forEach(field => {
+      const value = searchParams.get(field)
+      if (value) setValue(field, Number(value))
+    })
+
+    textFields.forEach(field => {
+      const value = searchParams.get(field)
+      if (value) setValue(field, value)
+    })
+
+    const typeBien = searchParams.get('typeBien')
+    if (typeBien === 'MAISON' || typeBien === 'APPARTEMENT' || typeBien === 'STUDIO') {
+      setValue('typeBien', typeBien)
+    }
+
+    const dpe = searchParams.get('dpe')
+    if (dpe) setValue('dpe', dpe.toUpperCase() as FormData['dpe'])
+
+    const photosParam = searchParams.get('snapshotPhotos')
+    if (photosParam) {
+      try { setValue('snapshotPhotos', JSON.parse(photosParam)) } catch {}
+    }
+
+    const urlSource = searchParams.get('urlSource') ?? ''
+    const source = urlSource.includes('leboncoin') ? 'leboncoin'
+      : urlSource.includes('seloger') ? 'seloger'
+      : urlSource.includes('pap') ? 'pap'
+      : null
+    setScrapingSource(source)
+    setMode('manuel')
+
+    toast.success('Données importées depuis l\'annonce ✓')
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (analyser.isSuccess && !isFirstAnalysis) {
