@@ -49,7 +49,7 @@ export async function createPoint(req: Request, res: Response) {
 
 export async function updatePoint(req: Request, res: Response) {
   try {
-    const { id } = req.params
+    const id = req.params.id as string
     const { radiusKm, label, color } = req.body
     console.log('PATCH personal-point:', { id, radiusKm, label, color })
     console.log('userId:', req.user?.id)
