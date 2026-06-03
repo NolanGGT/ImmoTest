@@ -33,7 +33,7 @@ COPY --from=builder-api /app/apps/api/prisma ./prisma
 COPY --from=builder-api /app/node_modules ./node_modules
 COPY --from=builder-api /app/apps/api/prompts ./prompts
 
-EXPOSE 3000
+EXPOSE 3011
 
 COPY apps/api/start.sh ./start.sh
 RUN chmod +x ./start.sh
