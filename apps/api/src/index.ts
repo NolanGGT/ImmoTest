@@ -126,8 +126,9 @@ app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
 })
 
 const PORT = parseInt(process.env.PORT || '3011', 10)
-app.listen(PORT, () => {
-  logger.info(`API running on http://localhost:${PORT}`)
+const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost'
+app.listen(PORT, HOST, () => {
+  logger.info(`API running on http://${HOST}:${PORT}`)
 })
 
 export default app
