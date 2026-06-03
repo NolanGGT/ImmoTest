@@ -117,14 +117,14 @@ function injectFloatingButton(data) {
 
   document.body.appendChild(btn)
 
-  // Slide-in animation
+  // Spring bounce entrance
   btn.style.opacity = '0'
-  btn.style.transform = 'translateY(20px)'
+  btn.style.transform = 'translateY(40px) scale(0.8)'
   setTimeout(() => {
-    btn.style.transition = 'opacity 0.3s ease, transform 0.3s ease'
+    btn.style.transition = 'opacity 0.4s ease, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)'
     btn.style.opacity = '1'
-    btn.style.transform = 'translateY(0)'
-  }, 500)
+    btn.style.transform = 'translateY(0) scale(1)'
+  }, 100)
 }
 
 function tryInject() {
@@ -137,7 +137,7 @@ function tryInject() {
   injectFloatingButton(data || { urlSource: window.location.href })
 }
 
-setTimeout(tryInject, 1500)
+setTimeout(tryInject, 300)
 
 // Message listener for popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
