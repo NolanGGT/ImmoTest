@@ -31,12 +31,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (request.action === 'isOnListingPage') {
     const site = detectSite()
-    const isListing = !!site && (
-      window.location.pathname.includes('/ad/') ||
-      /\/\d{6,}/.test(window.location.pathname) ||
+    const url = window.location.pathname
+
+    const isListing =
+      (site === 'leboncoin' && url.includes('/ad/')) ||
+      (site === 'seloger' && (url.includes('/annonces/') || /\/\d+/.test(url))) ||
+      site === 'pap' ||
       document.querySelector('[class*="price"]') !== null
-    )
-    sendResponse({ isListing, site })
+
+    sendResponse({ isListing: !!isListing, site })
   }
 
   return true // keep message channel open for async response
