@@ -35,5 +35,7 @@ COPY --from=builder-api /app/apps/api/prompts ./prompts
 
 EXPOSE 3000
 
-# migrate deploy is safe for prod (no interactive prompts, no dev migrations)
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+COPY apps/api/start.sh ./start.sh
+RUN chmod +x ./start.sh
+
+CMD ["./start.sh"]
