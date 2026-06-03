@@ -2,6 +2,15 @@ chrome.runtime.onInstalled.addListener(() => {
   console.log('[ImmoTest] Extension installée')
 })
 
+chrome.notifications.onClicked.addListener((notificationId) => {
+  const tabId = parseInt(notificationId.replace('listing-', ''))
+  if (!isNaN(tabId)) {
+    chrome.tabs.update(tabId, { active: true })
+    chrome.windows.update(-1, { focused: true })
+    chrome.notifications.clear(notificationId)
+  }
+})
+
 const LISTING_SITES = [
   'leboncoin.fr/ad/',
   'seloger.com',
