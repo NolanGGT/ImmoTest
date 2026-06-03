@@ -37,7 +37,10 @@
       "PowerShell(claude mcp *)",
       "WebFetch(domain:localhost)",
       "Bash(Select-String -Pattern \"\\(mentions-legales|cgu|confidentialite|opengraph|icon\\\\.tsx|auth.*layout|partage.*layout|sitemap\\\\.ts\\)\")",
-      "PowerShell(cd \"C:\\\\Users\\\\Phata\\\\Documents\\\\GitHub\\\\ImmoTest\\\\apps\\\\web\"; $errors = npx tsc --noEmit 2>&1; $errors | Where-Object { $_ -match \"\\(mentions-legales|cgu|confidentialite|opengraph-image|icon\\\\.tsx|auth.layout|partage.layout|sitemap\\\\.ts\\)\" })"
+      "PowerShell(cd \"C:\\\\Users\\\\Phata\\\\Documents\\\\GitHub\\\\ImmoTest\\\\apps\\\\web\"; $errors = npx tsc --noEmit 2>&1; $errors | Where-Object { $_ -match \"\\(mentions-legales|cgu|confidentialite|opengraph-image|icon\\\\.tsx|auth.layout|partage.layout|sitemap\\\\.ts\\)\" })",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   },
   "disabledMcpjsonServers": [
