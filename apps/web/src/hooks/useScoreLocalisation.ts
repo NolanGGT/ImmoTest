@@ -36,11 +36,17 @@ export function useScoreLocalisation(
           ) * 111
         : undefined
 
+      const transports = [
+        ...(layerData.metro ?? []),
+        ...(layerData.bus ?? []),
+        ...(layerData.gare ?? []),
+      ]
+
       scores[bien.id] = calculateScoreLocalisation({
         distanceTravailKm: distanceTravail,
-        nbTransports: countNearby(layerData.transport ?? [], 500),
-        nbCommerces: countNearby(layerData.commerces ?? [], 500),
-        nbEcoles: countNearby(layerData.ecoles ?? [], 800),
+        nbTransports: countNearby(transports, 500),
+        nbCommerces: countNearby(layerData.supermarche ?? [], 500),
+        nbEcoles: countNearby(layerData.ecole ?? [], 800),
         hasRisques: bienRisques?.[bien.id] ?? false,
       })
     }
