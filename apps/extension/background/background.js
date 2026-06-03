@@ -3,7 +3,7 @@ chrome.runtime.onInstalled.addListener(() => {
 })
 
 const LISTING_SITES = [
-  'leboncoin.fr',
+  'leboncoin.fr/ad/',
   'seloger.com',
   'pap.fr',
   'logic-immo.com',
@@ -18,7 +18,17 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (isListingSite) {
     chrome.action.setBadgeText({ text: '✓', tabId })
     chrome.action.setBadgeBackgroundColor({ color: '#4f46e5', tabId })
+
+    chrome.notifications.create(`listing-${tabId}`, {
+      type: 'basic',
+      iconUrl: 'icons/icon48.png',
+      title: 'ImmoTest',
+      message: 'Annonce détectée — cliquez pour analyser ce bien',
+      priority: 1,
+      silent: true,
+    })
   } else {
     chrome.action.setBadgeText({ text: '', tabId })
+    chrome.notifications.clear(`listing-${tabId}`)
   }
 })
