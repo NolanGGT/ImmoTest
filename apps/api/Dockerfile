@@ -21,7 +21,8 @@ RUN npx prisma generate --schema=apps/api/prisma/schema.prisma
 RUN npm run build --workspace=apps/api
 
 # ── 4. Lean production image ───────────────────────────────────────────────────
-FROM node:20-alpine AS runner
+FROM node:20-alpine AS base
+RUN apk add --no-cache openssl
 WORKDIR /app
 
 ENV NODE_ENV=production
