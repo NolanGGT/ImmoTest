@@ -151,11 +151,11 @@ function buildLayerPopupContent(layerId: string, props: Record<string, string>):
 const CLUSTER_MAX_ZOOM = 11
 
 const BIENS_LAYER_IDS = [
+  'biens-clusters',
+  'biens-cluster-count',
   'biens-risque',
   'biens-favorite',
   'biens-symbol',
-  'manual-cluster-count',
-  'manual-cluster',
   'personal-points-label',
   'personal-points-letter',
   'personal-points-circle',
@@ -264,51 +264,49 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
       try { if (map.getLayer(id)) map.removeLayer(id) } catch { /* */ }
     }
     try { if (map.getSource('biens')) map.removeSource('biens') } catch { /* */ }
-    try { if (map.getSource('manual-cluster')) map.removeSource('manual-cluster') } catch { /* */ }
 
     map.addSource('biens', {
       type: 'geojson',
       data: buildGeoJSON(visibleBiensRef.current, personalPointsRef.current, bienRisquesRef.current),
       promoteId: 'id',
+      cluster: true,
+      clusterMaxZoom: 10,
+      clusterRadius: 60,
+      clusterMinPoints: 2,
     })
 
-    // ── Manuel cluster (zoom < 10) ────────────────────────────────────────────
-    const validBiens = visibleBiensRef.current.filter((b) => b.latitude && b.longitude)
-    if (validBiens.length > 0) {
-      const centerLat = validBiens.reduce((s, b) => s + b.latitude, 0) / validBiens.length
-      const centerLon = validBiens.reduce((s, b) => s + b.longitude, 0) / validBiens.length
-      map.addSource('manual-cluster', {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: [centerLon, centerLat] },
-          properties: { count: validBiens.length },
-        } as GeoJSON.Feature,
-      })
-      map.addLayer({
-        id: 'manual-cluster',
-        type: 'circle',
-        source: 'manual-cluster',
-        paint: {
-          'circle-radius': 30,
-          'circle-color': '#4f46e5',
-          'circle-stroke-width': 3,
-          'circle-stroke-color': '#ffffff',
-        },
-      })
-      map.addLayer({
-        id: 'manual-cluster-count',
-        type: 'symbol',
-        source: 'manual-cluster',
-        layout: {
-          'text-field': ['get', 'count'],
-          'text-size': 16,
-          'text-font': ['DIN Offc Pro Bold', 'Arial Unicode MS Bold'],
-          'text-allow-overlap': true,
-        },
-        paint: { 'text-color': '#ffffff' },
-      })
-    }
+    // ── Native Mapbox clusters ────────────────────────────────────────────────
+    map.addLayer({
+      id: 'biens-clusters',
+      type: 'circle',
+      source: 'biens',
+      filter: ['has', 'point_count'],
+      paint: {
+        'circle-color': '#4f46e5',
+        'circle-radius': [
+          'step', ['get', 'point_count'],
+          20,
+          5, 25,
+          20, 30,
+        ],
+        'circle-stroke-width': 3,
+        'circle-stroke-color': '#ffffff',
+      },
+    })
+
+    map.addLayer({
+      id: 'biens-cluster-count',
+      type: 'symbol',
+      source: 'biens',
+      filter: ['has', 'point_count'],
+      layout: {
+        'text-field': ['get', 'point_count_abbreviated'],
+        'text-size': 14,
+        'text-font': ['DIN Offc Pro Bold', 'Arial Unicode MS Bold'],
+        'text-allow-overlap': true,
+      },
+      paint: { 'text-color': '#ffffff' },
+    })
 
     map.addLayer({
       id: 'biens-symbol',
@@ -422,18 +420,6 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
 
     const source = map.getSource('biens') as mapboxgl.GeoJSONSource | undefined
     source?.setData(buildGeoJSON(visibleBiensRef.current, personalPointsRef.current, bienRisquesRef.current))
-
-    const validBiens = visibleBiensRef.current.filter((b) => b.latitude && b.longitude)
-    const manualSource = map.getSource('manual-cluster') as mapboxgl.GeoJSONSource | undefined
-    if (manualSource && validBiens.length > 0) {
-      const centerLat = validBiens.reduce((s, b) => s + b.latitude, 0) / validBiens.length
-      const centerLon = validBiens.reduce((s, b) => s + b.longitude, 0) / validBiens.length
-      manualSource.setData({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [centerLon, centerLat] },
-        properties: { count: validBiens.length },
-      } as GeoJSON.Feature)
-    }
   }, [])
 
   const loadAllImages = useCallback(async (mapInstance: mapboxgl.Map) => {
@@ -942,9 +928,20 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
         map.fitBounds(bounds, { padding: 80, maxZoom: 14 })
       }
 
-      // Manual cluster click → zoom to detail level
-      map.on('click', 'manual-cluster', () => {
-        map.easeTo({ zoom: 11, duration: 600 })
+      // Native cluster click → expand
+      map.on('click', 'biens-clusters', (e) => {
+        const features = map.queryRenderedFeatures(e.point, { layers: ['biens-clusters'] })
+        const clusterId = features[0]?.properties?.cluster_id
+        if (!clusterId) return
+        ;(map.getSource('biens') as mapboxgl.GeoJSONSource)
+          .getClusterExpansionZoom(clusterId, (err, zoom) => {
+            if (err) return
+            map.easeTo({
+              center: (features[0].geometry as GeoJSON.Point).coordinates as [number, number],
+              zoom: (zoom ?? 10) + 1,
+              duration: 500,
+            })
+          })
       })
 
       // Individual bien click → toggle popup
@@ -992,10 +989,10 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
         }
       })
 
-      map.on('mouseenter', 'manual-cluster', () => {
+      map.on('mouseenter', 'biens-clusters', () => {
         if (!isPlacingModeRef.current) map.getCanvas().style.cursor = 'pointer'
       })
-      map.on('mouseleave', 'manual-cluster', () => {
+      map.on('mouseleave', 'biens-clusters', () => {
         if (!isPlacingModeRef.current) map.getCanvas().style.cursor = ''
       })
 
@@ -1014,7 +1011,7 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
           setIsPlacingMode(false)
           return
         }
-        const possibleLayers = ['biens-symbol', 'manual-cluster', 'personal-points-circle']
+        const possibleLayers = ['biens-symbol', 'biens-clusters', 'personal-points-circle']
         const layersToQuery = possibleLayers.filter((id) => {
           try { return !!map.getLayer(id) } catch { return false }
         })
@@ -1040,24 +1037,6 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
     if (!map) return
     map.getCanvas().style.cursor = isPlacingMode ? 'crosshair' : ''
   }, [isPlacingMode])
-
-  // ── Zoom-based visibility : cluster manuel < 10, marqueurs individuels >= 10 ──
-
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map?.isStyleLoaded() || !mapReady) return
-    const isZoomedOut = currentZoom < 10
-
-    const individualLayers = ['biens-symbol', 'biens-favorite', 'biens-risque', 'personal-points-circle', 'personal-points-letter', 'personal-points-label']
-    const clusterLayers = ['manual-cluster', 'manual-cluster-count']
-
-    individualLayers.forEach((id) => {
-      try { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', isZoomedOut ? 'none' : 'visible') } catch { /* */ }
-    })
-    clusterLayers.forEach((id) => {
-      try { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', isZoomedOut ? 'visible' : 'none') } catch { /* */ }
-    })
-  }, [currentZoom, mapReady])
 
   // ── Sync personal points layers ───────────────────────────────────────────────
 
