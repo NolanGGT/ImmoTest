@@ -8,6 +8,7 @@ interface SubscriptionStatus {
   isActive: boolean
   currentPeriodEnd?: string
   daysRemaining?: number
+  cancelAtPeriodEnd?: boolean
 }
 
 export function useSubscription() {
@@ -43,15 +44,27 @@ export function useSubscription() {
     },
   })
 
+  const reactivateMutation = useMutation({
+    mutationFn: async () => {
+      await api.patch('/api/subscription/reactivate')
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscription'] })
+    },
+  })
+
   return {
     isActive: statusQuery.data?.isActive ?? false,
     currentPeriodEnd: statusQuery.data?.currentPeriodEnd,
     daysRemaining: statusQuery.data?.daysRemaining,
+    cancelAtPeriodEnd: statusQuery.data?.cancelAtPeriodEnd ?? false,
     isLoading: statusQuery.isLoading,
     createCheckout: createCheckoutMutation.mutate,
     isCreatingCheckout: createCheckoutMutation.isPending,
     checkoutError: createCheckoutMutation.error,
     cancel: cancelMutation.mutate,
     isCancelling: cancelMutation.isPending,
+    reactivate: reactivateMutation.mutate,
+    isReactivating: reactivateMutation.isPending,
   }
 }

@@ -28,6 +28,10 @@ authRouter.get(
   authController.googleCallback
 )
 
+authRouter.get('/me', authMiddleware, authController.getMe)
+authRouter.patch('/password', authMiddleware, authController.changePassword)
+authRouter.delete('/account', authMiddleware, authController.deleteAccount)
+
 // 2FA (admin only — role check is in controller)
 authRouter.post('/2fa/setup', authMiddleware, twoFactorController.setup)
 authRouter.post('/2fa/verify', authMiddleware, twoFactorController.verify)

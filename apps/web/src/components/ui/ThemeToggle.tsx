@@ -10,25 +10,32 @@ const themes = [
   { value: 'system', icon: Monitor, label: 'Système' },
 ] as const
 
-export function ThemeToggle() {
+interface ThemeToggleProps {
+  showSystem?: boolean
+  showLabels?: boolean
+}
+
+export function ThemeToggle({ showSystem = true, showLabels = false }: ThemeToggleProps) {
   const { theme, setTheme } = useTheme()
+  const visible = showSystem ? themes : themes.filter((t) => t.value !== 'system')
 
   return (
     <div className="flex items-center gap-0.5 rounded-lg bg-muted p-0.5">
-      {themes.map(({ value, icon: Icon, label }) => (
+      {visible.map(({ value, icon: Icon, label }) => (
         <button
           key={value}
           type="button"
           onClick={() => setTheme(value)}
           title={label}
           className={cn(
-            'p-1.5 rounded-md transition-colors',
+            'flex items-center gap-1.5 px-2 py-1.5 rounded-md transition-colors',
             theme === value
               ? 'bg-background text-foreground shadow-sm'
               : 'text-muted-foreground hover:text-foreground'
           )}
         >
           <Icon size={14} />
+          {showLabels && <span className="text-xs">{label}</span>}
         </button>
       ))}
     </div>

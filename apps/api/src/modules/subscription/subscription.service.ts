@@ -7,6 +7,7 @@ export interface SubscriptionStatus {
   isActive: boolean
   currentPeriodEnd?: Date
   daysRemaining?: number
+  cancelAtPeriodEnd?: boolean
 }
 
 export async function createCheckoutSession(userId: string): Promise<{ checkoutUrl: string }> {
@@ -59,6 +60,7 @@ export async function getSubscriptionStatus(userId: string): Promise<Subscriptio
     isActive: true,
     currentPeriodEnd: sub.currentPeriodEnd,
     daysRemaining,
+    cancelAtPeriodEnd: sub.status === 'CANCELLED',
   }
 }
 
@@ -68,4 +70,16 @@ export async function cancelSubscription(userId: string): Promise<void> {
     data: { status: 'CANCELLED' },
   })
   logger.info({ userId }, 'Abonnement annulé')
+}
+
+export async function reactivateSubscription(userId: string): Promise<void> {
+  const sub = await prisma.subscription.findUnique({ where: { userId } })
+  if (!sub || sub.currentPeriodEnd <= new Date()) {
+    throw new Error('NO_ACTIVE_SUBSCRIPTION')
+  }
+  await prisma.subscription.update({
+    where: { userId },
+    data: { status: 'ACTIVE' },
+  })
+  logger.info({ userId }, 'Abonnement réactivé')
 }

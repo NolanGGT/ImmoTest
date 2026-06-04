@@ -27,6 +27,8 @@ export type AuditAction =
   | 'SCRAPING'
   | 'RAPPORT_GENERE'
   | 'LOGIN_BLOCKED'
+  | 'PASSWORD_CHANGED'
+  | 'ACCOUNT_DELETED'
 
 export async function auditLog(
   action: AuditAction,

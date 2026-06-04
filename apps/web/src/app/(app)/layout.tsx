@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Search, Building2, User, LogOut, Map } from 'lucide-react'
+import { Search, Building2, Map, User } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth.store'
 import { useSubscription } from '@/hooks/useSubscription'
@@ -35,7 +35,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const { logout } = useAuth()
-  const { isActive, isLoading: isLoadingSub } = useSubscription()
+  const user = useAuthStore((state) => state.user)
+  const { isActive, currentPeriodEnd, isLoading: isLoadingSub } = useSubscription()
+
+  const joursRestants = currentPeriodEnd
+    ? Math.max(0, Math.ceil((new Date(currentPeriodEnd).getTime() - Date.now()) / 86_400_000))
+    : 0
   const { changes, hasChanges, markAsSeen } = usePriceChanges()
 
   const relancerMutation = useMutation({
@@ -104,22 +109,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2">
             {!isLoadingSub && (
               isActive ? (
-                <span className="text-xs text-green-600 font-medium">✅ Accès actif</span>
+                <span className="text-xs font-medium text-green-500">{joursRestants}j restants</span>
               ) : (
                 <Link href="/profil" className="text-xs text-muted-foreground hover:text-foreground">
                   Passer premium
                 </Link>
               )
             )}
-            <ThemeToggle />
+            <ThemeToggle showSystem={false} />
             <NotificationBell />
-            <button
-              onClick={() => logout()}
-              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-              title="Se déconnecter"
+            <Link
+              href="/profil"
+              className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-bold hover:bg-indigo-700 transition-colors"
+              title="Mon profil"
             >
-              <LogOut size={16} />
-            </button>
+              {user?.email?.[0].toUpperCase() ?? '?'}
+            </Link>
           </div>
         </div>
       </header>

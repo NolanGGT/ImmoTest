@@ -4,9 +4,12 @@ import {
   loginSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  changePasswordSchema,
 } from './auth.schema'
 import * as authService from './auth.service'
-import { UnauthorizedError } from '../../lib/errors'
+import { UnauthorizedError, AppError } from '../../lib/errors'
+import bcrypt from 'bcryptjs'
+import { prisma } from '../../lib/prisma'
 import { auditLog } from '../../lib/audit'
 import { logger } from '../../lib/logger'
 import { checkPricesForUser } from '../../services/priceCheck.service'
@@ -123,6 +126,58 @@ export async function resetPassword(req: Request, res: Response, next: NextFunct
     const userId = await authService.resetPassword(token, password)
     auditLog('PASSWORD_RESET', { userId, ip: req.ip }).catch(() => {})
     res.json({ message: 'Mot de passe mis à jour' })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function getMe(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { id: req.user!.id },
+      select: { id: true, email: true, role: true, createdAt: true },
+    })
+    res.json(user)
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function changePassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { currentPassword, newPassword } = changePasswordSchema.parse(req.body)
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: req.user!.id } })
+
+    if (!user.passwordHash) {
+      throw new AppError(400, 'NO_PASSWORD', 'Ce compte utilise la connexion Google.')
+    }
+
+    const isValid = await bcrypt.compare(currentPassword, user.passwordHash)
+    if (!isValid) throw new AppError(400, 'WRONG_PASSWORD', 'Mot de passe actuel incorrect')
+
+    if (currentPassword === newPassword) {
+      throw new AppError(400, 'SAME_PASSWORD', 'Le nouveau mot de passe doit être différent')
+    }
+
+    const newHash = await bcrypt.hash(newPassword, 12)
+    await prisma.user.update({
+      where: { id: req.user!.id },
+      data: { passwordHash: newHash, refreshTokenHash: null },
+    })
+
+    auditLog('PASSWORD_CHANGED', { userId: req.user!.id, ip: req.ip }).catch(() => {})
+    res.json({ message: 'Mot de passe modifié' })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function deleteAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    await prisma.user.delete({ where: { id: req.user!.id } })
+    auditLog('ACCOUNT_DELETED', { userId: req.user!.id, ip: req.ip }).catch(() => {})
+    res.clearCookie('refreshToken', { path: '/api/auth' })
+    res.sendStatus(200)
   } catch (err) {
     next(err)
   }

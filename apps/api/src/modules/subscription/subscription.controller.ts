@@ -26,6 +26,15 @@ export async function getStatus(req: Request, res: Response, next: NextFunction)
   }
 }
 
+export async function reactivate(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    await subscriptionService.reactivateSubscription(req.user!.id)
+    res.json({ success: true })
+  } catch (err) {
+    next(err)
+  }
+}
+
 export async function cancel(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const status = await subscriptionService.getSubscriptionStatus(req.user!.id)

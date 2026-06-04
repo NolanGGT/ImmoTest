@@ -2,19 +2,31 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient, useMutation } from '@tanstack/react-query'
+import { useTheme } from 'next-themes'
 import { useAuthStore } from '@/stores/auth.store'
 import { useSubscription } from '@/hooks/useSubscription'
 import { useAuth } from '@/hooks/useAuth'
+import { useMe } from '@/hooks/useMe'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { Label } from '@/components/ui/label'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { useSharedAccess, useInvite, useRevokeAccess } from '@/hooks/useSharedAccess'
-import { Users, Loader2 } from 'lucide-react'
+import { Users, Loader2, Sun, Moon, Monitor, Shield, LogOut, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
+import api from '@/lib/api'
 
-function formatDate(iso: string): string {
+function formatDate(iso: string | Date): string {
   return new Intl.DateTimeFormat('fr-FR', {
     day: 'numeric',
     month: 'long',
@@ -22,7 +34,7 @@ function formatDate(iso: string): string {
   }).format(new Date(iso))
 }
 
-type Notification = { type: 'success' | 'error' | 'info'; message: string }
+// ─── Shared access section (unchanged) ────────────────────────────────────────
 
 function SharedAccessSection() {
   const { data, isLoading } = useSharedAccess()
@@ -72,7 +84,6 @@ function SharedAccessSection() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Accès reçu (guest) */}
         {data?.received && (
           <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl mb-2">
             <p className="text-sm text-indigo-700 dark:text-indigo-300">
@@ -82,7 +93,6 @@ function SharedAccessSection() {
           </div>
         )}
 
-        {/* Invitations envoyées */}
         {isLoading ? (
           <div className="h-10 bg-muted animate-pulse rounded-xl" />
         ) : (
@@ -110,7 +120,6 @@ function SharedAccessSection() {
           ))
         )}
 
-        {/* Formulaire d'invitation */}
         {canInvite && (
           <div className="flex gap-2 pt-1">
             <Input
@@ -139,108 +148,137 @@ function SharedAccessSection() {
   )
 }
 
+// ─── Main page ─────────────────────────────────────────────────────────────────
+
 function ProfilContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const queryClient = useQueryClient()
   const user = useAuthStore((state) => state.user)
   const { logout } = useAuth()
+  const { data: profile } = useMe()
+  const { theme, setTheme } = useTheme()
 
   const {
     isActive,
     currentPeriodEnd,
     daysRemaining,
+    cancelAtPeriodEnd,
     isLoading,
     createCheckout,
     isCreatingCheckout,
     checkoutError,
     cancel,
     isCancelling,
+    reactivate,
+    isReactivating,
   } = useSubscription()
 
-  const [notification, setNotification] = useState<Notification | null>(null)
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
 
   useEffect(() => {
     const success = searchParams.get('success')
     const cancelled = searchParams.get('cancelled')
-
     if (success === 'true') {
       queryClient.invalidateQueries({ queryKey: ['subscription'] })
-      setNotification({ type: 'success', message: 'Paiement réussi ! Votre accès ImmoTest est maintenant actif.' })
+      toast.success('Paiement réussi ! Votre accès ImmoTest est maintenant actif.')
       router.replace('/profil')
     } else if (cancelled === 'true') {
-      setNotification({ type: 'info', message: 'Paiement annulé. Vous pouvez réessayer quand vous le souhaitez.' })
+      toast.info('Paiement annulé. Vous pouvez réessayer quand vous le souhaitez.')
       router.replace('/profil')
     }
   }, [searchParams, queryClient, router])
 
+  const changePasswordMutation = useMutation({
+    mutationFn: async () => {
+      await api.patch('/api/auth/password', { currentPassword, newPassword })
+    },
+    onSuccess: () => {
+      toast.success('Mot de passe modifié avec succès')
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+    },
+    onError: (error: unknown) => {
+      const code = (error as { response?: { data?: { error?: { code?: string } } } })?.response?.data?.error?.code
+      const msg =
+        code === 'WRONG_PASSWORD' ? 'Mot de passe actuel incorrect' :
+        code === 'SAME_PASSWORD' ? 'Le nouveau mot de passe doit être différent' :
+        code === 'NO_PASSWORD' ? 'Ce compte utilise la connexion Google' :
+        'Erreur lors du changement de mot de passe'
+      toast.error(msg)
+    },
+  })
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: async () => {
+      await api.delete('/api/auth/account')
+    },
+    onSuccess: () => {
+      logout()
+      router.replace('/login')
+    },
+    onError: () => toast.error('Erreur lors de la suppression du compte'),
+  })
+
+  const handleChangePassword = () => {
+    if (newPassword !== confirmPassword) {
+      toast.error('Les mots de passe ne correspondent pas')
+      return
+    }
+    changePasswordMutation.mutate()
+  }
+
   const handleCancel = () => {
     cancel(undefined, {
       onSuccess: () => {
-        setShowCancelConfirm(false)
-        setNotification({
-          type: 'info',
-          message: `Abonnement annulé. Votre accès reste actif jusqu'au ${currentPeriodEnd ? formatDate(currentPeriodEnd) : '—'}.`,
-        })
+        setShowCancelModal(false)
+        toast.info(`Abonnement annulé. Votre accès reste actif jusqu'au ${currentPeriodEnd ? formatDate(currentPeriodEnd) : '—'}.`)
       },
-      onError: () => {
-        setNotification({ type: 'error', message: "Erreur lors de l'annulation. Réessayez plus tard." })
-      },
+      onError: () => toast.error("Erreur lors de l'annulation. Réessayez plus tard."),
+    })
+  }
+
+  const handleReactivate = () => {
+    reactivate(undefined, {
+      onSuccess: () => toast.success('Abonnement réactivé !'),
+      onError: () => toast.error('Erreur lors de la réactivation.'),
     })
   }
 
   const isExpired = !isActive && currentPeriodEnd !== undefined
 
-  const notifColors: Record<Notification['type'], string> = {
-    success: 'bg-green-50 text-green-800 border-green-200',
-    error: 'bg-red-50 text-red-800 border-red-200',
-    info: 'bg-blue-50 text-blue-800 border-blue-200',
-  }
+  const themeOptions = [
+    { value: 'light', icon: Sun, label: 'Clair' },
+    { value: 'dark', icon: Moon, label: 'Sombre' },
+    { value: 'system', icon: Monitor, label: 'Système' },
+  ] as const
 
   return (
-    <div className="container max-w-lg mx-auto px-4 py-8 space-y-6">
-      {notification && (
-        <div className={`rounded-lg px-4 py-3 text-sm flex items-start justify-between gap-3 border ${notifColors[notification.type]}`}>
-          <span>{notification.message}</span>
-          <button
-            onClick={() => setNotification(null)}
-            className="opacity-60 hover:opacity-100 shrink-0 text-lg leading-none"
-            aria-label="Fermer"
-          >
-            ×
-          </button>
+    <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+
+      {/* Section 1 — Header profil */}
+      <div className="flex items-center gap-4 p-6 bg-gray-900 dark:bg-gray-900 rounded-2xl border border-gray-800">
+        <div className="w-14 h-14 rounded-full bg-indigo-600 flex items-center justify-center text-xl font-bold text-white shrink-0">
+          {user?.email?.[0].toUpperCase() ?? '?'}
         </div>
-      )}
+        <div>
+          <p className="font-semibold text-white text-lg">{user?.email}</p>
+          {profile?.createdAt && (
+            <p className="text-sm text-gray-400">
+              Membre depuis{' '}
+              {new Date(profile.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+            </p>
+          )}
+        </div>
+      </div>
 
-      {/* Bloc apparence */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Apparence</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">Choisissez le thème de l'interface.</p>
-          <ThemeToggle />
-        </CardContent>
-      </Card>
-
-      {/* Bloc compte */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Mon compte</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">{user?.email}</p>
-          <Button variant="outline" size="sm" onClick={() => logout()}>
-            Se déconnecter
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Bloc partage */}
-      <SharedAccessSection />
-
-      {/* Bloc abonnement */}
+      {/* Section 2 — Abonnement */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Mon abonnement</CardTitle>
@@ -252,11 +290,16 @@ function ProfilContent() {
               <div className="h-4 bg-muted animate-pulse rounded w-1/2" />
             </div>
           ) : isActive ? (
-            // Bloc B — abonné actif
             <div className="space-y-4">
-              <span className="inline-flex items-center gap-1.5 bg-green-100 text-green-800 text-xs font-medium px-2.5 py-1 rounded-full">
-                ✅ Abonnement actif
-              </span>
+              {cancelAtPeriodEnd ? (
+                <span className="inline-flex items-center gap-1.5 bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-1 rounded-full">
+                  ⚠️ Annulé — accès jusqu'au {currentPeriodEnd ? formatDate(currentPeriodEnd) : '—'}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 bg-green-100 text-green-800 text-xs font-medium px-2.5 py-1 rounded-full">
+                  ✅ Abonnement actif
+                </span>
+              )}
               <div className="space-y-1">
                 <p className="text-sm">
                   Accès valide jusqu'au{' '}
@@ -268,45 +311,35 @@ function ProfilContent() {
               </div>
               <div className="w-full bg-muted rounded-full h-2">
                 <div
-                  className="bg-green-500 h-2 rounded-full transition-all duration-500"
+                  className={cn(
+                    'h-2 rounded-full transition-all duration-500',
+                    cancelAtPeriodEnd ? 'bg-orange-400' : 'bg-green-500'
+                  )}
                   style={{ width: `${Math.min(100, Math.round(((daysRemaining ?? 0) / 90) * 100))}%` }}
                 />
               </div>
-
-              {showCancelConfirm ? (
-                <div className="border rounded-lg p-4 space-y-3">
-                  <p className="text-sm font-medium">Annuler l'abonnement ?</p>
-                  <p className="text-sm text-muted-foreground">
-                    Votre accès restera actif jusqu'au{' '}
-                    <strong>{currentPeriodEnd ? formatDate(currentPeriodEnd) : '—'}</strong>.
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={handleCancel}
-                      disabled={isCancelling}
-                    >
-                      {isCancelling ? 'Annulation…' : "Confirmer l'annulation"}
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setShowCancelConfirm(false)}>
-                      Retour
-                    </Button>
-                  </div>
-                </div>
+              {cancelAtPeriodEnd ? (
+                <Button
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  size="sm"
+                  onClick={handleReactivate}
+                  disabled={isReactivating}
+                >
+                  {isReactivating ? <Loader2 size={14} className="animate-spin mr-2" /> : null}
+                  Renouveler l'abonnement
+                </Button>
               ) : (
                 <Button
                   variant="outline"
                   size="sm"
                   className="text-muted-foreground"
-                  onClick={() => setShowCancelConfirm(true)}
+                  onClick={() => setShowCancelModal(true)}
                 >
                   Annuler mon abonnement
                 </Button>
               )}
             </div>
           ) : isExpired ? (
-            // Bloc C — expiré
             <div className="space-y-4">
               <span className="inline-flex items-center gap-1.5 bg-muted text-muted-foreground text-xs font-medium px-2.5 py-1 rounded-full">
                 ⏰ Abonnement expiré
@@ -315,28 +348,18 @@ function ProfilContent() {
                 Votre accès a expiré le{' '}
                 <strong>{currentPeriodEnd ? formatDate(currentPeriodEnd) : '—'}</strong>.
               </p>
-              <Button
-                className="w-full"
-                onClick={() => createCheckout()}
-                disabled={isCreatingCheckout}
-              >
+              <Button className="w-full" onClick={() => createCheckout()} disabled={isCreatingCheckout}>
                 {isCreatingCheckout ? 'Redirection…' : 'Renouveler mon accès — 29 €'}
               </Button>
             </div>
           ) : (
-            // Bloc A — pas abonné
             <div className="space-y-5">
               <div>
                 <p className="font-semibold mb-3">Passez à l'abonnement ImmoTest</p>
                 <ul className="space-y-2 text-sm">
-                  {[
-                    'Analyses illimitées',
-                    'Rapports PDF téléchargeables',
-                    'Accès pendant 3 mois complets',
-                  ].map((benefit) => (
-                    <li key={benefit} className="flex items-center gap-2">
-                      <span className="text-green-600">✅</span>
-                      {benefit}
+                  {['Analyses illimitées', 'Rapports PDF téléchargeables', 'Accès pendant 3 mois complets'].map((b) => (
+                    <li key={b} className="flex items-center gap-2">
+                      <span className="text-green-600">✅</span>{b}
                     </li>
                   ))}
                 </ul>
@@ -344,27 +367,171 @@ function ProfilContent() {
               <div className="text-center py-2">
                 <p className="text-4xl font-bold">29 €</p>
                 <p className="text-sm text-muted-foreground">pour 3 mois</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Paiement unique, pas d'abonnement automatique
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">Paiement unique, pas d'abonnement automatique</p>
               </div>
-              {checkoutError && (
-                <p className="text-sm text-destructive text-center">
-                  Une erreur est survenue. Veuillez réessayer.
-                </p>
-              )}
-              <Button
-                className="w-full"
-                size="lg"
-                onClick={() => createCheckout()}
-                disabled={isCreatingCheckout}
-              >
+              {checkoutError && <p className="text-sm text-destructive text-center">Une erreur est survenue. Veuillez réessayer.</p>}
+              <Button className="w-full" size="lg" onClick={() => createCheckout()} disabled={isCreatingCheckout}>
                 {isCreatingCheckout ? 'Redirection vers Stripe…' : 'Démarrer mon accès'}
               </Button>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Section 3 — Sécurité */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Shield size={18} className="text-indigo-500" />
+            Sécurité
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="current-password">Mot de passe actuel</Label>
+            <Input
+              id="current-password"
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="••••••••"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="new-password">Nouveau mot de passe</Label>
+            <Input
+              id="new-password"
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="••••••••"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirm-password">Confirmer le nouveau mot de passe</Label>
+            <Input
+              id="confirm-password"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="••••••••"
+              onKeyDown={(e) => e.key === 'Enter' && handleChangePassword()}
+            />
+          </div>
+          <Button
+            onClick={handleChangePassword}
+            disabled={!currentPassword || !newPassword || !confirmPassword || changePasswordMutation.isPending}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+          >
+            {changePasswordMutation.isPending ? <Loader2 size={14} className="animate-spin mr-2" /> : null}
+            Changer le mot de passe
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Section 4 — Apparence */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Apparence</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2">
+            {themeOptions.map(({ value, icon: Icon, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setTheme(value)}
+                className={cn(
+                  'flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-colors flex-1 justify-center',
+                  theme === value
+                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    : 'border-border text-muted-foreground hover:border-indigo-300 hover:text-foreground'
+                )}
+              >
+                <Icon size={14} />
+                {label}
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Section 5 — Recherche partagée */}
+      <SharedAccessSection />
+
+      {/* Section 6 — Danger zone */}
+      <Card className="border-red-200 dark:border-red-900/50">
+        <CardHeader>
+          <CardTitle className="text-lg text-red-600">Zone de danger</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button
+            variant="outline"
+            className="w-full border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center gap-2"
+            onClick={() => logout()}
+          >
+            <LogOut size={16} />
+            Se déconnecter
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full border-red-400 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center gap-2"
+            onClick={() => setShowDeleteModal(true)}
+          >
+            <Trash2 size={16} />
+            Supprimer mon compte
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Modal — Annuler abonnement */}
+      <Dialog open={showCancelModal} onOpenChange={setShowCancelModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Annuler votre abonnement ?</DialogTitle>
+            <DialogDescription>
+              Votre accès reste actif jusqu'au{' '}
+              <strong>{currentPeriodEnd ? formatDate(currentPeriodEnd) : '—'}</strong>
+              {daysRemaining !== undefined && ` (${daysRemaining} jours restants)`}.
+              Après cette date, vous ne pourrez plus analyser de nouveaux biens.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowCancelModal(false)}>
+              Annuler
+            </Button>
+            <Button variant="destructive" onClick={handleCancel} disabled={isCancelling}>
+              {isCancelling ? <Loader2 size={14} className="animate-spin mr-2" /> : null}
+              Confirmer l'annulation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal — Supprimer compte */}
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Supprimer votre compte ?</DialogTitle>
+            <DialogDescription>
+              Cette action est irréversible. Tous vos biens, analyses et données seront définitivement supprimés.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
+              Annuler
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteAccountMutation.mutate()}
+              disabled={deleteAccountMutation.isPending}
+            >
+              {deleteAccountMutation.isPending ? <Loader2 size={14} className="animate-spin mr-2" /> : null}
+              Supprimer définitivement
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -373,9 +540,10 @@ export default function ProfilPage() {
   return (
     <Suspense
       fallback={
-        <div className="container max-w-lg mx-auto px-4 py-8 space-y-6">
-          <div className="h-32 bg-muted animate-pulse rounded-xl" />
+        <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+          <div className="h-24 bg-muted animate-pulse rounded-2xl" />
           <div className="h-48 bg-muted animate-pulse rounded-xl" />
+          <div className="h-32 bg-muted animate-pulse rounded-xl" />
         </div>
       }
     >
