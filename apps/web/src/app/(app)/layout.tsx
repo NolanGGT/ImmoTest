@@ -109,7 +109,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2">
             {!isLoadingSub && (
               isActive ? (
-                <span className="text-xs font-medium text-green-500">{joursRestants}j restants</span>
+                <span className="text-xs font-semibold text-green-400">{joursRestants}</span>
+                <span className="text-xs text-green-400 -ml-1">j restants</span>
               ) : (
                 <Link href="/profil" className="text-xs text-muted-foreground hover:text-foreground">
                   Passer premium
@@ -118,12 +119,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             )}
             <ThemeToggle showSystem={false} />
             <NotificationBell />
-            <Link
-              href="/profil"
-              className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-bold hover:bg-indigo-700 transition-colors"
-              title="Mon profil"
-            >
-              {user?.email?.[0].toUpperCase() ?? '?'}
+            <Link href="/profil" title="Mon profil">
+              <button className="w-9 h-9 rounded-full bg-gray-800 dark:bg-gray-700 border border-gray-700 dark:border-gray-600 flex items-center justify-center hover:bg-gray-700 transition">
+                <User size={16} className="text-gray-300" />
+              </button>
             </Link>
           </div>
         </div>
