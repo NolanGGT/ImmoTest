@@ -9,6 +9,9 @@ const PUBLIC_ROUTES = [
   '/invite',
   '/partage',
   '/api/auth',
+  '/mentions-legales',
+  '/cgu',
+  '/confidentialite',
 ]
 
 export function middleware(request: NextRequest) {
