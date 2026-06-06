@@ -22,17 +22,17 @@
 
   "content_scripts": [
     {
-      "matches": [
-        "https://www.leboncoin.fr/ad/*",
-        "https://www.seloger.com/*",
-        "https://www.pap.fr/*",
-        "https://www.logic-immo.com/*",
-        "https://www.bienici.com/*"
-      ],
+      "matches": ["https://*/*"],
       "js": [
         "content/scrapers/leboncoin.js",
         "content/scrapers/seloger.js",
         "content/scrapers/pap.js",
+        "content/scrapers/logicimmo.js",
+        "content/scrapers/bienici.js",
+        "content/scrapers/meilleursagents.js",
+        "content/scrapers/agencies.js",
+        "content/scrapers/neoprop.js",
+        "content/scrapers/generic.js",
         "content/content.js"
       ],
       "run_at": "document_idle"
@@ -53,6 +53,18 @@
     "https://www.seloger.com/*",
     "https://www.pap.fr/*",
     "https://www.logic-immo.com/*",
-    "https://www.bienici.com/*"
+    "https://www.bienici.com/*",
+    "https://www.meilleursagents.com/*",
+    "https://www.orpi.com/*",
+    "https://www.century21.fr/*",
+    "https://www.stephaneplaza.com/*",
+    "https://www.laforet.com/*",
+    "https://www.era.fr/*",
+    "https://www.guy-hoquet.com/*",
+    "https://www.iadfrance.fr/*",
+    "https://www.hosman.co/*",
+    "https://www.proprioo.fr/*",
+    "https://www.liberkeys.com/*",
+    "https://www.imop.fr/*"
   ]
 }

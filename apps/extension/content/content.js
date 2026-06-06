@@ -1,25 +1,66 @@
-// Scrapers are loaded before this file via manifest.json content_scripts order:
-// leboncoin.js → seloger.js → pap.js → content.js
+// Scrapers loaded before this file (see manifest.json content_scripts order)
+
+const LISTING_URL_PATTERNS = {
+  leboncoin: /\/ad\//,
+  logicimmo: /\/detail-vente/,
+  bienici: /\/annonce\//,
+  meilleursagents: /\/annonces\//,
+  orpi: /\/annonce\//,
+  century21: /\/annonces\//,
+  stephaneplaza: /\/annonce\//,
+  laforet: /\/annonces\//,
+  era: /\/annonces\//,
+  guyhoquet: /\/biens\//,
+  iadfrance: /\/annonces\//,
+  hosman: /\/vente\//,
+  proprioo: /\/annonces\//,
+  liberkeys: /\/annonces\//,
+  imop: /\/annonces\//,
+}
 
 function detectSite() {
-  const hostname = window.location.hostname
-  if (hostname.includes('leboncoin')) return 'leboncoin'
-  if (hostname.includes('seloger')) return 'seloger'
-  if (hostname.includes('pap.fr')) return 'pap'
-  if (hostname.includes('logic-immo')) return 'logicimmo'
-  if (hostname.includes('bienici')) return 'bienici'
-  return null
+  const h = window.location.hostname
+  if (h.includes('leboncoin')) return 'leboncoin'
+  if (h.includes('seloger')) return 'seloger'
+  if (h.includes('pap.fr')) return 'pap'
+  if (h.includes('logic-immo')) return 'logicimmo'
+  if (h.includes('bienici')) return 'bienici'
+  if (h.includes('meilleursagents')) return 'meilleursagents'
+  if (h.includes('orpi')) return 'orpi'
+  if (h.includes('century21')) return 'century21'
+  if (h.includes('stephaneplaza')) return 'stephaneplaza'
+  if (h.includes('laforet')) return 'laforet'
+  if (h.includes('era.fr')) return 'era'
+  if (h.includes('guy-hoquet')) return 'guyhoquet'
+  if (h.includes('iadfrance')) return 'iadfrance'
+  if (h.includes('hosman')) return 'hosman'
+  if (h.includes('proprioo')) return 'proprioo'
+  if (h.includes('liberkeys')) return 'liberkeys'
+  if (h.includes('imop.fr')) return 'imop'
+  return 'generic'
 }
 
 function extractData() {
   const site = detectSite()
-  if (!site) return null
-
   switch (site) {
     case 'leboncoin': return extractLeBonCoin()
     case 'seloger': return extractSeLoger()
     case 'pap': return extractPAP()
-    default: return null
+    case 'logicimmo': return extractLogicImmo()
+    case 'bienici': return extractBienici()
+    case 'meilleursagents': return extractMeilleursAgents()
+    case 'orpi': return extractOrpi()
+    case 'century21': return extractCentury21()
+    case 'stephaneplaza': return extractStephanePlaza()
+    case 'laforet': return extractLaforet()
+    case 'era': return extractEra()
+    case 'guyhoquet': return extractGuyHoquet()
+    case 'iadfrance': return extractIadFrance()
+    case 'hosman': return extractHosman()
+    case 'proprioo': return extractProrioo()
+    case 'liberkeys': return extractLiberkeys()
+    case 'imop': return extractImop()
+    default: return extractGeneric()
   }
 }
 
@@ -117,7 +158,7 @@ function injectFloatingButton(data) {
 
   document.body.appendChild(btn)
 
-  // Spring bounce entrance with double rebound
+  // Spring bounce entrance
   btn.style.opacity = '0'
   btn.style.transform = 'translateY(100px) scale(0.5)'
   setTimeout(() => {
@@ -136,15 +177,34 @@ function injectFloatingButton(data) {
   }, 50)
 }
 
-function tryInject() {
-  const site = detectSite()
-  console.log('[ImmoTest] site détecté:', site, window.location.href)
-  if (!site) return
+function isListingPage(site) {
+  const path = window.location.pathname
+  if (site === 'seloger') return /\/annonces\/|\/detail\/|\d{5,}/.test(path)
+  if (site === 'pap') return /\/vente\/|\/annonce\/|\/annonces\//.test(path)
+  const pattern = LISTING_URL_PATTERNS[site]
+  return pattern ? pattern.test(path) : true
+}
 
+function tryInject() {
   document.getElementById('immotest-btn')?.remove()
 
+  const site = detectSite()
+
+  // For generic (unknown sites), only show if immo listing is detected
+  if (site === 'generic') {
+    const data = extractGeneric()
+    if (!data) return
+    const hasSignals = (data.prix && data.surface) ||
+      /appartement|maison|villa|studio|immobil/i.test(data.snapshotTitre || document.title)
+    if (!hasSignals) return
+    injectFloatingButton(data)
+    return
+  }
+
+  if (!isListingPage(site)) return
+
   const data = extractData()
-  console.log('[ImmoTest] data extraite:', data)
+  console.log('[ImmoTest] annonce:', site, data)
   injectFloatingButton(data || { urlSource: window.location.href })
 }
 
@@ -159,15 +219,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (request.action === 'isOnListingPage') {
     const site = detectSite()
-    const url = window.location.pathname
-
-    const isListing =
-      (site === 'leboncoin' && url.includes('/ad/')) ||
-      (site === 'seloger' && (url.includes('/annonces/') || /\/\d+/.test(url))) ||
-      site === 'pap' ||
-      document.querySelector('[class*="price"]') !== null
-
-    sendResponse({ isListing: !!isListing, site })
+    if (site === 'generic') {
+      const data = extractGeneric()
+      const isListing = !!(data?.prix || data?.surface)
+      sendResponse({ isListing, site })
+    } else {
+      sendResponse({ isListing: isListingPage(site), site })
+    }
   }
 
   return true
