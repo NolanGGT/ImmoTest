@@ -326,6 +326,7 @@ export async function getBiens(
     latitude: number | null
     longitude: number | null
     annonceRetiree: boolean
+    snapshotPhotos: string[]
     votes: Array<{ userId: string; vote: string; comment: string | null }>
   }[]
   pagination: {
@@ -367,6 +368,7 @@ export async function getBiens(
         latitude: true,
         longitude: true,
         annonceRetiree: true,
+        snapshotPhotos: true,
         votes: { select: { userId: true, vote: true, comment: true } },
       },
       orderBy,

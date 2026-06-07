@@ -19,6 +19,7 @@ export interface BienSummary {
   latitude: number | null
   longitude: number | null
   annonceRetiree: boolean
+  snapshotPhotos: string[]
   votes: Array<{ userId: string; vote: string; comment: string | null }>
 }
 

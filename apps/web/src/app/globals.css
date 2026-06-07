@@ -133,3 +133,15 @@ body {
 .dark .immosafe-popup .mapboxgl-popup-tip {
   border-top-color: var(--card);
 }
+
+/* ── Bien photo popup (hover) ── */
+.bien-photo-popup .mapboxgl-popup-content {
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  border-radius: 10px !important;
+}
+
+.bien-photo-popup .mapboxgl-popup-tip {
+  display: none !important;
+}

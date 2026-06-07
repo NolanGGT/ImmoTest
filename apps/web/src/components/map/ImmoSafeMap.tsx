@@ -172,6 +172,7 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
   const searchPinRef = useRef<mapboxgl.Marker | null>(null)
   const hoveredIdRef = useRef<string | null>(null)
   const layerPopupRef = useRef<mapboxgl.Popup | null>(null)
+  const bienPhotoPopupRef = useRef<mapboxgl.Popup | null>(null)
   const layerClickHandlersRef = useRef<
     Map<LayerType, (e: mapboxgl.MapLayerMouseEvent) => void>
   >(new Map())
@@ -974,16 +975,49 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
           .addTo(map)
       })
 
-      // Hover scale via feature-state
+      // Hover scale via feature-state + photo popup
       map.on('mouseenter', 'biens-symbol', (e) => {
         if (!isPlacingModeRef.current) map.getCanvas().style.cursor = 'pointer'
-        const id = e.features?.[0].properties?.id as string | undefined
+        const feature = e.features?.[0]
+        if (!feature) return
+        const id = feature.properties?.id as string | undefined
         if (!id) return
         if (hoveredIdRef.current && hoveredIdRef.current !== id) {
           map.setFeatureState({ source: 'biens', id: hoveredIdRef.current }, { hover: false })
         }
         hoveredIdRef.current = id
         map.setFeatureState({ source: 'biens', id }, { hover: true })
+
+        // Photo popup
+        const coords = (feature.geometry as GeoJSON.Point).coordinates as [number, number]
+        const photo = feature.properties?.photo as string | null
+        bienPhotoPopupRef.current?.remove()
+        if (photo) {
+          bienPhotoPopupRef.current = new mapboxgl.Popup({
+            closeButton: false,
+            closeOnClick: false,
+            offset: 20,
+            className: 'bien-photo-popup',
+            maxWidth: 'none',
+          })
+            .setLngLat(coords)
+            .setHTML(`
+              <div style="
+                width:180px;
+                border-radius:10px;
+                overflow:hidden;
+                box-shadow:0 8px 24px rgba(0,0,0,0.3);
+                border:2px solid rgba(255,255,255,0.15);
+              ">
+                <img
+                  src="${photo}"
+                  style="width:180px;height:120px;object-fit:cover;display:block;"
+                  onerror="this.parentElement.style.display='none'"
+                />
+              </div>
+            `)
+            .addTo(map)
+        }
       })
 
       map.on('mouseleave', 'biens-symbol', () => {
@@ -992,6 +1026,8 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
           map.setFeatureState({ source: 'biens', id: hoveredIdRef.current }, { hover: false })
           hoveredIdRef.current = null
         }
+        bienPhotoPopupRef.current?.remove()
+        bienPhotoPopupRef.current = null
       })
 
       map.on('mouseenter', 'manual-cluster', () => {
@@ -1030,6 +1066,7 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
     return () => {
       searchPinRef.current?.remove()
       layerPopupRef.current?.remove()
+      bienPhotoPopupRef.current?.remove()
       map.remove()
       mapRef.current = null
     }

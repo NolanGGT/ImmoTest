@@ -12,6 +12,7 @@ export interface BienMapData {
   longitude: number
   statut: string
   isFavorite: boolean
+  snapshotPhotos: string[]
 }
 
 export interface PersonalPoint {
@@ -55,6 +56,7 @@ export function buildGeoJSON(
         statut: b.statut,
         isFavorite: b.isFavorite,
         atRisk: bienRisques[b.id] ?? false,
+        photo: b.snapshotPhotos?.[0] ?? null,
       },
     }))
 
