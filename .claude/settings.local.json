@@ -41,7 +41,8 @@
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
-      "Bash(git revert *)"
+      "Bash(git revert *)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Phata\\\\Documents\\\\GitHub\\\\ImmoTest\\\\apps\\\\extension\" -Recurse | Select-Object FullName | ForEach-Object { $_.FullName })"
     ]
   },
   "disabledMcpjsonServers": [
