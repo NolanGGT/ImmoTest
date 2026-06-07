@@ -109,8 +109,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2">
             {!isLoadingSub && (
               isActive ? (
-                <span className="text-xs font-semibold text-green-400">{joursRestants}</span>
-                <span className="text-xs text-green-400 -ml-1">j restants</span>
+                <>
+                  <span className="text-xs font-semibold text-green-400">{joursRestants}</span>
+                  <span className="text-xs text-green-400 ml-0.5">j restants</span>
+                </>
               ) : (
                 <Link href="/profil" className="text-xs text-muted-foreground hover:text-foreground">
                   Passer premium
