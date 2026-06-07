@@ -926,6 +926,9 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
     map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-left')
 
     mapRef.current = map
+    if (typeof window !== 'undefined') {
+      ;(window as any).__map = map
+    }
 
     map.on('load', async () => {
       currentStyleRef.current = initialStyle
@@ -977,6 +980,7 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
 
       // Hover scale via feature-state + photo popup
       map.on('mouseenter', 'biens-symbol', (e) => {
+        console.log('[ImmoTest] mouseenter biens-symbol', e.features?.[0]?.properties)
         if (!isPlacingModeRef.current) map.getCanvas().style.cursor = 'pointer'
         const feature = e.features?.[0]
         if (!feature) return
@@ -1021,6 +1025,7 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
       })
 
       map.on('mouseleave', 'biens-symbol', () => {
+        console.log('[ImmoTest] mouseleave biens-symbol')
         if (!isPlacingModeRef.current) map.getCanvas().style.cursor = ''
         if (hoveredIdRef.current) {
           map.setFeatureState({ source: 'biens', id: hoveredIdRef.current }, { hover: false })
