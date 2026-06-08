@@ -242,6 +242,8 @@ export async function deleteBien(req: Request, res: Response, next: NextFunction
     const bien = await prisma.bien.findFirst({ where: { id, userId } })
     if (!bien) throw new NotFoundError('Bien introuvable')
 
+    // Rapport has no onDelete: Cascade — must be deleted before the bien
+    await prisma.rapport.deleteMany({ where: { bienId: id } })
     await prisma.bien.delete({ where: { id } })
 
     await auditLog('BIEN_SUPPRIME', {
@@ -252,6 +254,7 @@ export async function deleteBien(req: Request, res: Response, next: NextFunction
 
     res.status(204).send()
   } catch (err) {
+    logger.error({ error: err, id: req.params.id }, '[DELETE BIEN] erreur')
     next(err)
   }
 }
