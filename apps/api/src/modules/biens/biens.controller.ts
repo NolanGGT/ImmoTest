@@ -6,6 +6,7 @@ import { NotFoundError } from '../../lib/errors'
 import { sanitizeTextForLLM, isSuspiciousInput } from '../../lib/sanitize'
 import { auditLog } from '../../lib/audit'
 import * as biensService from './biens.service'
+import { logger } from '../../lib/logger'
 import * as subscriptionService from '../subscription/subscription.service'
 import { scrapeAnnonce } from '../../services/scraping.service'
 import { getScoreQuartier } from '../../services/quartier.service'
@@ -166,7 +167,7 @@ export async function listBiens(req: Request, res: Response, next: NextFunction)
     const targetUserId = sharedAccess ? sharedAccess.ownerId : req.user!.id
     const result = await biensService.getBiens(targetUserId, { search, page, limit, sort })
 
-    console.log('[BIENS] premier bien snapshotPhotos:', result.biens[0]?.snapshotPhotos)
+    logger.info({ snapshotPhotos: result.biens[0]?.snapshotPhotos }, '[BIENS] premier bien snapshotPhotos')
 
     res.json({
       ...result,
