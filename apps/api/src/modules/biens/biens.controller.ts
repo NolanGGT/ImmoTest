@@ -246,10 +246,10 @@ export async function deleteBien(req: Request, res: Response, next: NextFunction
       metadata: { bienId: id },
     })
 
-    return res.status(204).send()
+    res.status(204).send()
   } catch (error: any) {
     logger.error({ error: error.message, stack: error.stack, id }, '[DELETE BIEN] erreur')
-    return res.status(400).json({ error: error.message })
+    res.status(400).json({ error: error.message })
   }
 }
 

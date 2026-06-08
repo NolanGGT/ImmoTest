@@ -404,7 +404,7 @@ export async function updateBien(id: string, userId: string, data: { isFavorite?
 
 export async function deleteBien(id: string, userId: string): Promise<void> {
   const bien = await prisma.bien.findFirst({ where: { id, userId } })
-  if (!bien) throw new AppError('Bien non trouvé', 404)
+  if (!bien) throw new NotFoundError('Bien non trouvé')
 
   await prisma.$transaction(async (tx) => {
     // SharedAccess has no bienId field (User-to-User relation) — excluded
