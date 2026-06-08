@@ -380,7 +380,10 @@ export async function getBiens(
 
   const totalPages = Math.ceil(total / limit)
   return {
-    biens,
+    biens: biens.map((bien) => ({
+      ...bien,
+      snapshotPhotos: (bien.snapshotPhotos as string[] | null) ?? [],
+    })),
     pagination: {
       total,
       page,
