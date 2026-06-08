@@ -83,9 +83,22 @@ export function buildGeoJSON(
     properties: { type: 'personal', id: p.id, label: p.label, color: p.color },
   }))
 
+  const features = [...bienFeatures, ...personalFeatures]
+
+  const seen = new Map()
+  features.forEach(f => {
+    const key = `${f.geometry.coordinates[0].toFixed(4)}_${f.geometry.coordinates[1].toFixed(4)}`
+    const count = seen.get(key) || 0
+    seen.set(key, count + 1)
+    if (count > 0) {
+      f.geometry.coordinates[0] += (Math.random() - 0.5) * 0.0006
+      f.geometry.coordinates[1] += (Math.random() - 0.5) * 0.0006
+    }
+  })
+
   return {
     type: 'FeatureCollection',
-    features: [...bienFeatures, ...personalFeatures],
+    features,
   }
 }
 

@@ -578,8 +578,8 @@ function AnalyserContent() {
                                 <div className="flex items-start gap-2 mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
                                   <span className="text-amber-500 mt-0.5 flex-shrink-0">⚠️</span>
                                   <span>
-                                    La précision de la carte dépend de l&apos;adresse renseignée.{' '}
-                                    Vérifiez qu&apos;elle est <strong>complète et correcte</strong> avant de lancer l&apos;analyse.
+                                    Les sites comme LeBonCoin ou SeLoger <strong>masquent l&apos;adresse exacte</strong> et ne donnent qu&apos;un quartier approximatif.{' '}
+                                    Corrigez l&apos;adresse si vous la connaissez pour améliorer la précision de l&apos;analyse.
                                   </span>
                                 </div>
                               </FormItem>
