@@ -70,14 +70,15 @@ export const AnalyseResultSchema = z.object({
     phraseVerdict: z.string().min(1),
   }),
 
-  dpeAnalyse: z
-    .object({
+  dpeAnalyse: z.union([
+    z.object({
       classe: z.string().min(1),
       surcoutMensuelEstime: z.number().min(0),
       interdictionLocation2028: z.boolean(),
       phraseImpact: z.string().min(1),
-    })
-    .optional(),
+    }),
+    z.string().transform(s => ({ raw: s })),
+  ]).optional().nullable(),
 
   negociation: z.object({
     margeEstimee: z.number().min(0).max(20),
@@ -88,7 +89,10 @@ export const AnalyseResultSchema = z.object({
   }),
 
   pointsVigilance: z.array(PointVigilanceSchema).min(2).max(6),
-  questionsVendeur: z.array(QuestionVendeurSchema).min(3).max(7),
+  questionsVendeur: z.union([
+    z.array(z.string()),
+    z.string().transform(s => s.split('\n').filter(Boolean)),
+  ]).optional().nullable(),
   syntheseTexte: z.string().min(50).max(800),
   adressePrecise: z.string().nullable().optional(),
 })

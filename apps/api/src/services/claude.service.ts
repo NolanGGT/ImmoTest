@@ -132,7 +132,9 @@ export async function analyser(
 
   const systemPrompt = loadSystemPrompt()
   const noteSection = dataNote ? `\n${dataNote}\n` : ''
-  const userMessage = `Analyse ce bien immobilier. Si le titre ou la description mentionne une adresse précise (numéro + rue, nom de résidence, référence à un quartier spécifique ou une rue), extrais-la et retourne-la dans le champ "adressePrecise". Exemples : "rue de la Paix", "résidence Les Lilas", "angle boulevard Victor Hugo". Si aucune adresse précise n'est trouvée, omets ce champ.${noteSection}\n\n${JSON.stringify(context, null, 2)}`
+  const userMessage = `Analyse ce bien immobilier. Si le titre ou la description mentionne une adresse précise (numéro + rue, nom de résidence, référence à un quartier spécifique ou une rue), extrais-la et retourne-la dans le champ "adressePrecise". Exemples : "rue de la Paix", "résidence Les Lilas", "angle boulevard Victor Hugo". Si aucune adresse précise n'est trouvée, omets ce champ.
+
+IMPORTANT: dpeAnalyse doit être un objet JSON, pas une string. questionsVendeur doit être un tableau JSON [], pas une string. Retourne uniquement du JSON valide, sans markdown ni backticks.${noteSection}\n\n${JSON.stringify(context, null, 2)}`
 
   logger.info({ contextSize: userMessage.length, model: MODEL }, 'Claude appelé')
 
