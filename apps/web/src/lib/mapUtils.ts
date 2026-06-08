@@ -91,8 +91,8 @@ export function buildGeoJSON(
     const count = seen.get(key) || 0
     seen.set(key, count + 1)
     if (count > 0) {
-      f.geometry.coordinates[0] += (Math.random() - 0.5) * 0.0006
-      f.geometry.coordinates[1] += (Math.random() - 0.5) * 0.0006
+      f.geometry.coordinates[0] += (Math.random() - 0.5) * 0.0012
+      f.geometry.coordinates[1] += (Math.random() - 0.5) * 0.0012
     }
   })
 

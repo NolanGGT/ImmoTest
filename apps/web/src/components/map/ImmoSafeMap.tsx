@@ -326,6 +326,7 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
         'icon-size': 1,
         'icon-anchor': 'bottom',
         'icon-allow-overlap': true,
+        'symbol-sort-key': ['get', 'score'],
         'text-field': ['get', 'scoreLabel'],
         'text-offset': [0, -1.8],
         'text-anchor': 'center',
