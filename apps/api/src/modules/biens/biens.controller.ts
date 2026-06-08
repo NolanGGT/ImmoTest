@@ -290,6 +290,16 @@ export async function scrape(req: Request, res: Response, next: NextFunction): P
       metadata: { source: result.source, success: result.success, partial: result.partial, url: url.slice(0, 100) },
     }).catch(() => {})
 
+    if (result.error === 'blocked') {
+      res.status(422).json({
+        error: {
+          code: 'SCRAPING_BLOCKED',
+          message: "Ce site bloque le scraping automatique. Utilisez l'extension Chrome pour analyser cette annonce.",
+        },
+      })
+      return
+    }
+
     res.json(result)
   } catch (err) {
     next(err)
