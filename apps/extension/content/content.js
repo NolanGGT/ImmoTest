@@ -210,33 +210,29 @@ function tryInject() {
   injectFloatingButton(data || { urlSource: window.location.href })
 }
 
-let currentData = null
-let currentUrl = null
-
 setTimeout(tryInject, 200)
 
-// SPA navigation detection — URL-only, subtree:false to minimise callbacks
+// Reset complet à chaque changement d'URL
 let lastUrl = location.href
-new MutationObserver(() => {
+
+const urlObserver = new MutationObserver(() => {
   if (location.href !== lastUrl) {
     lastUrl = location.href
-    currentData = null
-    currentUrl = null
-    document.getElementById('immotest-btn')?.remove()
-    setTimeout(tryInject, 800)
+    // Supprimer le bouton immédiatement
+    const btn = document.getElementById('immotest-btn')
+    if (btn) btn.remove()
+    // Attendre que le nouveau contenu se charge
+    setTimeout(tryInject, 1000)
   }
-}).observe(document.body, { childList: true, subtree: false })
+})
+
+urlObserver.observe(document.body, { childList: true, subtree: false })
 
 // Message listener for popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'extractData') {
-    if (currentData && currentUrl === location.href) {
-      sendResponse({ data: currentData, site: detectSite(), url: currentUrl })
-    } else {
-      currentData = extractData()
-      currentUrl = location.href
-      sendResponse({ data: currentData, site: detectSite(), url: currentUrl })
-    }
+    const freshData = extractData() // toujours re-extraire depuis le DOM actuel
+    sendResponse({ data: freshData, url: location.href })
   }
 
   if (request.action === 'isOnListingPage') {
