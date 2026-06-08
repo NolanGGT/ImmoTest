@@ -534,7 +534,9 @@ export function MapSidebar({
                     ].join(' ')}
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium truncate">{bien.ville}</p>
+                    <p className="text-xs font-medium truncate">
+                      {bien.adresse ?? [bien.typeBien, bien.ville].filter(Boolean).join(' · ')}
+                    </p>
                     <p className="text-xs text-gray-400 dark:text-gray-500">
                       {bien.prix && bien.surface
                         ? `${Math.round(bien.prix / bien.surface).toLocaleString('fr-FR')} €/m²`

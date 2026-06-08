@@ -73,6 +73,7 @@ export function buildGeoJSON(
         isFavorite: b.isFavorite,
         atRisk: bienRisques[b.id] ?? false,
         photo: toFirstPhoto(b.snapshotPhotos),
+        coordonneesApproximatives: !b.adresse,
       },
     }))
 

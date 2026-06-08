@@ -36,6 +36,7 @@ const STATUT_VARIANT: Record<
 interface BienMapData {
   id: string
   ville: string
+  adresse?: string | null
   prix: number
   surface: number
   typeBien: string
@@ -162,7 +163,7 @@ export function BienPopup({
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
-              {bien.typeBien} · {bien.ville}
+              {bien.adresse ?? [bien.typeBien, bien.ville].filter(Boolean).join(' · ')}
             </p>
             {bien.surface > 0 && (
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{bien.surface} m²</p>

@@ -335,7 +335,11 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
         'text-ignore-placement': true,
         'text-font': ['DIN Offc Pro Bold', 'Arial Unicode MS Bold'],
       },
-      paint: { 'text-color': '#ffffff' },
+      paint: {
+        'text-color': '#ffffff',
+        'icon-opacity': ['case', ['get', 'coordonneesApproximatives'], 0.6, 1.0],
+        'text-opacity': ['case', ['get', 'coordonneesApproximatives'], 0.6, 1.0],
+      },
     })
 
     map.addLayer({

@@ -9,6 +9,7 @@ export interface BienSummary {
   userId: string | null
   titre: string | null
   ville: string
+  adresse?: string | null
   typeBien: string
   prix: number
   surface: number

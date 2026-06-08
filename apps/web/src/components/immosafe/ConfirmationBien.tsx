@@ -78,12 +78,15 @@ export function ConfirmationBien({
         ))}
       </div>
 
-      {adresse && (
-        <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
-          <span>⚠️</span>
-          <span>Adresse approximative — les sites immobiliers masquent l&apos;adresse exacte. Précision au quartier près.</span>
-        </p>
-      )}
+      {(() => {
+        const adresseFloue = !adresse || !/\d/.test(adresse)
+        return (
+          <p className={`text-xs flex items-center gap-1 mt-1 ${adresseFloue ? 'text-red-600' : 'text-amber-600'}`}>
+            <span>⚠️</span>
+            <span>Adresse approximative — les sites immobiliers masquent l&apos;adresse exacte. Précision au quartier près.</span>
+          </p>
+        )
+      })()}
 
       <div className="flex gap-3">
         <Button variant="outline" className="flex-1" onClick={onModify} disabled={isPending}>

@@ -143,9 +143,11 @@ async function runAnalysisPipeline(input: BienFormulaireInput): Promise<{
     coords = await dvfService.geocoder(input.adresse, input.ville, input.codePostal).catch(() => null)
   }
   if (!coords && input.ville && input.codePostal) {
+    logger.warn({ ville: input.ville, codePostal: input.codePostal }, 'Géocodage sans adresse — coordonnées approximatives (ville seulement)')
     coords = await dvfService.geocoder('', input.ville, input.codePostal).catch(() => null)
   }
   if (!coords && input.ville) {
+    logger.warn({ ville: input.ville }, 'Géocodage sans adresse ni code postal — coordonnées très approximatives')
     coords = await dvfService.geocoder('', input.ville, '').catch(() => null)
   }
   if (!coords) {
@@ -316,6 +318,7 @@ export async function getBiens(
     userId: string | null
     titre: string | null
     ville: string
+    adresse: string | null
     typeBien: string
     prix: number
     surface: number
@@ -358,6 +361,7 @@ export async function getBiens(
         userId: true,
         titre: true,
         ville: true,
+        adresse: true,
         typeBien: true,
         prix: true,
         surface: true,
