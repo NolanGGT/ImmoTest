@@ -401,3 +401,16 @@ export async function updateBien(id: string, userId: string, data: { isFavorite?
     data,
   })
 }
+
+export async function deleteBien(id: string, userId: string): Promise<void> {
+  const bien = await prisma.bien.findFirst({ where: { id, userId } })
+  if (!bien) throw new NotFoundError('Bien introuvable')
+
+  await prisma.$transaction([
+    prisma.rapport.deleteMany({ where: { bienId: id } }),
+    prisma.sharedAnalyse.deleteMany({ where: { bienId: id } }),
+    prisma.bienVote.deleteMany({ where: { bienId: id } }),
+    prisma.priceCheck.deleteMany({ where: { bienId: id } }),
+    prisma.bien.delete({ where: { id } }),
+  ])
+}
