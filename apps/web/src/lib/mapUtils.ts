@@ -34,6 +34,15 @@ export interface NearestPoint {
   emoji: string
 }
 
+function toFirstPhoto(raw: unknown): string | null {
+  let photos: unknown = raw
+  if (typeof photos === 'string') {
+    try { photos = JSON.parse(photos) } catch { return null }
+  }
+  if (Array.isArray(photos) && typeof photos[0] === 'string') return photos[0]
+  return null
+}
+
 export function buildGeoJSON(
   biens: BienMapData[],
   personalPoints: PersonalPoint[] = [],
@@ -56,7 +65,7 @@ export function buildGeoJSON(
         statut: b.statut,
         isFavorite: b.isFavorite,
         atRisk: bienRisques[b.id] ?? false,
-        photo: b.snapshotPhotos?.[0] ?? null,
+        photo: toFirstPhoto(b.snapshotPhotos),
       },
     }))
 
