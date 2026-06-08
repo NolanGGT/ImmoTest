@@ -981,6 +981,7 @@ export function ImmoSafeMap({ biens }: ImmoSafeMapProps) {
       // Hover scale via feature-state + photo popup
       map.on('mouseenter', 'biens-symbol', (e) => {
         console.log('[ImmoTest] mouseenter biens-symbol', e.features?.[0]?.properties)
+        console.log('[ImmoTest] photo:', e.features?.[0]?.properties?.photo)
         if (!isPlacingModeRef.current) map.getCanvas().style.cursor = 'pointer'
         const feature = e.features?.[0]
         if (!feature) return
