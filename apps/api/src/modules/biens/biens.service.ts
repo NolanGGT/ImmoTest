@@ -404,13 +404,14 @@ export async function updateBien(id: string, userId: string, data: { isFavorite?
 
 export async function deleteBien(id: string, userId: string): Promise<void> {
   const bien = await prisma.bien.findFirst({ where: { id, userId } })
-  if (!bien) throw new NotFoundError('Bien introuvable')
+  if (!bien) throw new AppError('Bien non trouvé', 404)
 
-  await prisma.$transaction([
-    prisma.rapport.deleteMany({ where: { bienId: id } }),
-    prisma.sharedAnalyse.deleteMany({ where: { bienId: id } }),
-    prisma.bienVote.deleteMany({ where: { bienId: id } }),
-    prisma.priceCheck.deleteMany({ where: { bienId: id } }),
-    prisma.bien.delete({ where: { id } }),
-  ])
+  await prisma.$transaction(async (tx) => {
+    // SharedAccess has no bienId field (User-to-User relation) — excluded
+    await tx.rapport.deleteMany({ where: { bienId: id } }).catch(() => {})
+    await tx.sharedAnalyse.deleteMany({ where: { bienId: id } }).catch(() => {})
+    await tx.bienVote.deleteMany({ where: { bienId: id } }).catch(() => {})
+    await tx.priceCheck.deleteMany({ where: { bienId: id } }).catch(() => {})
+    await tx.bien.delete({ where: { id } })
+  })
 }

@@ -235,10 +235,9 @@ export async function relancerAnalyse(req: Request, res: Response, next: NextFun
 }
 
 export async function deleteBien(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const id = req.params.id as string
+  const userId = req.user!.id
   try {
-    const id = req.params.id as string
-    const userId = req.user!.id
-
     await biensService.deleteBien(id, userId)
 
     await auditLog('BIEN_SUPPRIME', {
@@ -247,10 +246,10 @@ export async function deleteBien(req: Request, res: Response, next: NextFunction
       metadata: { bienId: id },
     })
 
-    res.status(204).send()
-  } catch (err) {
-    logger.error({ error: err, id: req.params.id }, '[DELETE BIEN] erreur')
-    next(err)
+    return res.status(204).send()
+  } catch (error: any) {
+    logger.error({ error: error.message, stack: error.stack, id }, '[DELETE BIEN] erreur')
+    return res.status(400).json({ error: error.message })
   }
 }
 
