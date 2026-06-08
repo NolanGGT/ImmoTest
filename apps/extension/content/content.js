@@ -212,11 +212,22 @@ function tryInject() {
 
 setTimeout(tryInject, 200)
 
+// SPA navigation detection — reset button when URL changes
+let lastUrl = location.href
+new MutationObserver(() => {
+  const url = location.href
+  if (url !== lastUrl) {
+    lastUrl = url
+    document.getElementById('immotest-btn')?.remove()
+    setTimeout(tryInject, 300)
+  }
+}).observe(document, { subtree: true, childList: true })
+
 // Message listener for popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'extractData') {
     const data = extractData()
-    sendResponse({ data, site: detectSite() })
+    sendResponse({ data, site: detectSite(), url: window.location.href })
   }
 
   if (request.action === 'isOnListingPage') {

@@ -57,9 +57,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const dataResponse = await chrome.tabs.sendMessage(tab.id, {
       action: 'extractData',
+      forceRefresh: true,
     }).catch(() => null)
 
     const data = dataResponse?.data
+    // Always use the live tab URL as urlSource — overrides any cached value
+    if (data) data.urlSource = dataResponse?.url || tab.url
 
     if (data?.prix) {
       document.getElementById('preview-type').textContent =
