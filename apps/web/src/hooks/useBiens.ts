@@ -50,6 +50,7 @@ async function fetchBiens(opts: {
   if (opts.limit) params.set('limit', String(opts.limit))
   if (opts.sort) params.set('sort', opts.sort)
   const { data } = await api.get(`/api/biens?${params.toString()}`)
+  console.log('[HOOK] premier bien snapshotPhotos:', data?.biens?.[0]?.snapshotPhotos)
   return data
 }
 

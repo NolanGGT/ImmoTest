@@ -166,6 +166,8 @@ export async function listBiens(req: Request, res: Response, next: NextFunction)
     const targetUserId = sharedAccess ? sharedAccess.ownerId : req.user!.id
     const result = await biensService.getBiens(targetUserId, { search, page, limit, sort })
 
+    console.log('[BIENS] premier bien snapshotPhotos:', result.biens[0]?.snapshotPhotos)
+
     res.json({
       ...result,
       meta: {

@@ -48,6 +48,7 @@ export function buildGeoJSON(
   personalPoints: PersonalPoint[] = [],
   bienRisques: Record<string, boolean> = {}
 ): GeoJSON.FeatureCollection {
+  console.log('[GEOJSON] bien.snapshotPhotos:', biens[0]?.snapshotPhotos)
   const bienFeatures = biens
     .filter((b) => b.latitude && b.longitude)
     .map((b) => ({
