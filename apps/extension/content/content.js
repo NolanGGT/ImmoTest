@@ -212,21 +212,14 @@ function tryInject() {
 
 setTimeout(tryInject, 200)
 
-// Reset complet à chaque changement d'URL
 let lastUrl = location.href
-
-const urlObserver = new MutationObserver(() => {
+setInterval(() => {
   if (location.href !== lastUrl) {
     lastUrl = location.href
-    // Supprimer le bouton immédiatement
-    const btn = document.getElementById('immotest-btn')
-    if (btn) btn.remove()
-    // Attendre que le nouveau contenu se charge
-    setTimeout(tryInject, 1000)
+    document.getElementById('immotest-btn')?.remove()
+    setTimeout(tryInject, 800)
   }
-})
-
-urlObserver.observe(document.body, { childList: true, subtree: false })
+}, 500)
 
 // Message listener for popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
