@@ -4,6 +4,7 @@ import type { OverpassNode } from './overpass'
 export interface BienMapData {
   id: string
   ville: string
+  adresse?: string
   prix: number
   surface: number
   typeBien: string
@@ -49,6 +50,11 @@ export function buildGeoJSON(
   bienRisques: Record<string, boolean> = {}
 ): GeoJSON.FeatureCollection {
   console.log('[GEOJSON] bien.snapshotPhotos:', biens[0]?.snapshotPhotos)
+  biens.forEach(b => {
+    if (!b.latitude || !b.longitude) {
+      console.warn('[GEOJSON] bien sans coordonnées:', b.id, b.ville, b.adresse)
+    }
+  })
   const bienFeatures = biens
     .filter((b) => b.latitude && b.longitude)
     .map((b) => ({
