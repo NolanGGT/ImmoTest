@@ -186,6 +186,8 @@ function isListingPage(site) {
 }
 
 function tryInject() {
+  if (window.location.hostname.includes('immotest.fr')) return
+
   document.getElementById('immotest-btn')?.remove()
 
   const site = detectSite()
