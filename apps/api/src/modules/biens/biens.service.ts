@@ -207,21 +207,35 @@ export async function analyserBien(
   const startTime = Date.now()
   logger.info({ ville: input.ville, typeBien: input.typeBien, prix: input.prix }, 'Analyse démarrée')
 
-  const { coords, dvfData, ademeData, analyse } = await runAnalysisPipeline(input)
+  const { coords: initialCoords, dvfData, ademeData, analyse } = await runAnalysisPipeline(input)
+
+  // Si Claude a extrait une adresse précise depuis le snapshot, l'utiliser pour affiner le géocodage
+  const adressePrecise = analyse.adressePrecise ?? null
+  let finalCoords = initialCoords
+  const adresseFinale = input.adresse ?? adressePrecise ?? null
+
+  if (adressePrecise && !input.adresse) {
+    logger.info({ adressePrecise, ville: input.ville }, 'Adresse extraite par Claude — tentative géocodage précis')
+    const refinedCoords = await dvfService.geocoder(adressePrecise, input.ville, input.codePostal ?? '').catch(() => null)
+    if (refinedCoords) {
+      finalCoords = refinedCoords
+      logger.info({ adressePrecise }, 'Géocodage précis réussi via adressePrecise')
+    }
+  }
 
   const bien = await prisma.bien.create({
     data: {
       userId: userId ?? null,
-      titre: generateTitre({ typeBien: input.typeBien, adresse: input.adresse, ville: input.ville, codePostal: input.codePostal, prix: input.prix, surface: input.surface }),
+      titre: generateTitre({ typeBien: input.typeBien, adresse: adresseFinale ?? undefined, ville: input.ville, codePostal: input.codePostal, prix: input.prix, surface: input.surface }),
       prix: input.prix,
       surface: input.surface,
       typeBien: input.typeBien,
       nbPieces: input.nbPieces ?? null,
       ville: input.ville,
       codePostal: input.codePostal,
-      adresse: input.adresse ?? null,
-      latitude: coords?.lat ?? null,
-      longitude: coords?.lon ?? null,
+      adresse: adresseFinale,
+      latitude: finalCoords?.lat ?? null,
+      longitude: finalCoords?.lon ?? null,
       dpe: input.dpe ?? ademeData?.classe ?? null,
       charges: input.charges ?? null,
       anneeConstruction: input.anneeConstruction ?? null,

@@ -92,6 +92,10 @@ const ANALYSE_BIEN_TOOL: Anthropic.Tool = {
         },
       },
       syntheseTexte: { type: 'string' },
+      adressePrecise: {
+        type: 'string',
+        description: "Adresse précise extraite du titre ou de la description (numéro + rue, résidence, quartier), ou omis si introuvable",
+      },
     },
   },
 }
@@ -128,7 +132,7 @@ export async function analyser(
 
   const systemPrompt = loadSystemPrompt()
   const noteSection = dataNote ? `\n${dataNote}\n` : ''
-  const userMessage = `Analyse ce bien immobilier.${noteSection}\n\n${JSON.stringify(context, null, 2)}`
+  const userMessage = `Analyse ce bien immobilier. Si le titre ou la description mentionne une adresse précise (numéro + rue, nom de résidence, référence à un quartier spécifique ou une rue), extrais-la et retourne-la dans le champ "adressePrecise". Exemples : "rue de la Paix", "résidence Les Lilas", "angle boulevard Victor Hugo". Si aucune adresse précise n'est trouvée, omets ce champ.${noteSection}\n\n${JSON.stringify(context, null, 2)}`
 
   logger.info({ contextSize: userMessage.length, model: MODEL }, 'Claude appelé')
 

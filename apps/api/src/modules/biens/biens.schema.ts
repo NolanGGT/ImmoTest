@@ -90,6 +90,7 @@ export const AnalyseResultSchema = z.object({
   pointsVigilance: z.array(PointVigilanceSchema).min(2).max(6),
   questionsVendeur: z.array(QuestionVendeurSchema).min(3).max(7),
   syntheseTexte: z.string().min(50).max(800),
+  adressePrecise: z.string().nullable().optional(),
 })
 
 export type AnalyseResultValidated = z.infer<typeof AnalyseResultSchema>
