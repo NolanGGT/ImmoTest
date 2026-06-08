@@ -56,7 +56,7 @@ function createPinSVG(color: string): string {
 function createBienPinSVG(color: string): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="-1 -1 34 42">
     <path d="M16 0C7.2 0 0 7.2 0 16C0 28 16 40 16 40C16 40 32 28 32 16C32 7.2 24.8 0 16 0Z"
-          fill="${color}" stroke="#000000" stroke-width="2" stroke-linejoin="round"/>
+          fill="${color}" stroke="#000000" stroke-width="0.5" stroke-linejoin="round"/>
   </svg>`
 }
 
