@@ -39,6 +39,23 @@ function extractSeLoger() {
     }
   } catch (e) {
     console.error('[ImmoTest] SeLoger:', e)
+
+    // Fallback meta OG
+    const ogTitle = document.querySelector('meta[property="og:title"]')?.content
+    const ogDesc = document.querySelector('meta[property="og:description"]')?.content
+
+    const prixMatch = (ogTitle + ' ' + ogDesc)?.match(/(\d[\d\s]+)\s*€/)
+    const prix = prixMatch ? parseInt(prixMatch[1].replace(/\s/g, '')) : null
+
+    if (ogTitle || prix) {
+      return {
+        snapshotTitre: ogTitle,
+        snapshotDescription: ogDesc,
+        prix,
+        urlSource: window.location.href
+      }
+    }
+
     return null
   }
 }
