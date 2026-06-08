@@ -210,24 +210,33 @@ function tryInject() {
   injectFloatingButton(data || { urlSource: window.location.href })
 }
 
+let currentData = null
+let currentUrl = null
+
 setTimeout(tryInject, 200)
 
-// SPA navigation detection — reset button when URL changes
+// SPA navigation detection — URL-only, subtree:false to minimise callbacks
 let lastUrl = location.href
 new MutationObserver(() => {
-  const url = location.href
-  if (url !== lastUrl) {
-    lastUrl = url
+  if (location.href !== lastUrl) {
+    lastUrl = location.href
+    currentData = null
+    currentUrl = null
     document.getElementById('immotest-btn')?.remove()
-    setTimeout(tryInject, 300)
+    setTimeout(tryInject, 800)
   }
-}).observe(document, { subtree: true, childList: true })
+}).observe(document.body, { childList: true, subtree: false })
 
 // Message listener for popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'extractData') {
-    const data = extractData()
-    sendResponse({ data, site: detectSite(), url: window.location.href })
+    if (currentData && currentUrl === location.href) {
+      sendResponse({ data: currentData, site: detectSite(), url: currentUrl })
+    } else {
+      currentData = extractData()
+      currentUrl = location.href
+      sendResponse({ data: currentData, site: detectSite(), url: currentUrl })
+    }
   }
 
   if (request.action === 'isOnListingPage') {
