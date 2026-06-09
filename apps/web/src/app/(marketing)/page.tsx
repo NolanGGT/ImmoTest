@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, useEffect, useMemo, useCallback } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -438,8 +439,9 @@ function HeroSection() {
   ]
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-16">
-      <div className="absolute inset-0 z-0" style={{ backgroundImage: "url('/images/hero.png')", backgroundSize: 'cover', backgroundPosition: 'center top' }}>
-        <div className="absolute inset-0 bg-black/60" />
+      <div className="absolute inset-0 z-0">
+        <Image src="/images/hero.png" alt="Hero" fill className="object-cover object-top" priority />
+        <div className="absolute inset-0 bg-black/40" />
       </div>
       <Grain />
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 80% 55% at 50% 38%, rgba(249,115,22,0.07) 0%, transparent 70%)' }} />
