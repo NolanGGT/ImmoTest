@@ -3,6 +3,14 @@
     "supabase": {
       "type": "http",
       "url": "https://mcp.supabase.com/mcp?project_ref=nkiouinhyhpcpqgkcowj"
+    },
+    "21st-dev-magic": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["@21st-dev/magic@latest", "--ai", "claude"],
+      "env": {
+        "API_KEY": "7adcdb439683125a23bd0c87273749aab81d4b41b5bfc3830d53876b6119ffed"
+      }
     }
   }
 }

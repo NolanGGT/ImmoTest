@@ -42,10 +42,16 @@
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
       "Bash(git revert *)",
-      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Phata\\\\Documents\\\\GitHub\\\\ImmoTest\\\\apps\\\\extension\" -Recurse | Select-Object FullName | ForEach-Object { $_.FullName })"
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Phata\\\\Documents\\\\GitHub\\\\ImmoTest\\\\apps\\\\extension\" -Recurse | Select-Object FullName | ForEach-Object { $_.FullName })",
+      "Bash(npx uipro@latest init --ai claude)",
+      "Bash(npx @21st-dev/magic@latest init --ai claude)",
+      "Skill(update-config)"
     ]
   },
   "disabledMcpjsonServers": [
     "supabase"
+  ],
+  "enabledMcpjsonServers": [
+    "21st-dev-magic"
   ]
 }
