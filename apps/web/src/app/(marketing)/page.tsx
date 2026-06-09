@@ -440,8 +440,16 @@ function HeroSection() {
     <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-16"
       style={{ background: 'linear-gradient(140deg,#0F0F0F 0%,#141414 55%,#0F0F0F 100%)' }}>
       <Grain />
-      {/* TODO: replace gradient with photo of couple looking at a laptop */}
+      {/* Photo placeholder — replace with real image of couple looking at a laptop */}
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 80% 55% at 50% 38%, rgba(249,115,22,0.07) 0%, transparent 70%)' }} />
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="relative w-[520px] h-[320px] max-w-[85vw] rounded-2xl overflow-hidden opacity-30"
+          style={{ background: 'linear-gradient(135deg,#1A1A1A 0%,#2A1F1A 100%)', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <span className="absolute bottom-3 right-4 text-[11px] font-mono" style={{ color: '#4B5563' }}>
+            [ Photo : couple regardant un écran ]
+          </span>
+        </div>
+      </div>
 
       <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-8">
@@ -482,7 +490,7 @@ function HeroSection() {
 
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.2, duration: 0.6 }}>
           <motion.a
-            href={ctaHref}
+            href="#tarifs"
             className="inline-flex items-center gap-2.5 px-8 py-4 text-white text-lg font-bold rounded-full"
             style={{ background: '#F97316' }}
             whileHover={{ scale: 1.04, background: '#EA6B0D' } as never}
@@ -490,7 +498,7 @@ function HeroSection() {
             animate={{ boxShadow: ['0 0 0 0px rgba(249,115,22,0.45)', '0 0 0 16px rgba(249,115,22,0)'] }}
             transition={{ boxShadow: { duration: 1.9, repeat: Infinity, ease: 'easeOut' } } as never}
           >
-            Analyser une annonce <ArrowRight size={18} />
+            Voir les offres <ArrowRight size={18} />
           </motion.a>
         </motion.div>
 
@@ -878,6 +886,15 @@ function ClosingCTASection() {
     >
       <Grain />
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 65% 50% at 50% 50%, rgba(249,115,22,0.09) 0%, transparent 70%)' }} />
+      {/* Photo placeholder — replace with real image of handshake / real estate signing */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="relative w-[520px] h-[280px] max-w-[85vw] rounded-2xl overflow-hidden opacity-25"
+          style={{ background: 'linear-gradient(135deg,#1A1A1A 0%,#2A1F1A 100%)', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <span className="absolute bottom-3 right-4 text-[11px] font-mono" style={{ color: '#4B5563' }}>
+            [ Photo : serrage de main / achat immobilier ]
+          </span>
+        </div>
+      </div>
       <div className="relative z-10 max-w-2xl mx-auto px-4">
         <FadeUp>
           <h2 className="text-4xl md:text-6xl font-bold text-white mb-5" style={playfair}>
@@ -889,14 +906,14 @@ function ClosingCTASection() {
             Rejoignez les acheteurs qui ne font plus confiance au hasard.
           </p>
           <motion.a
-            href={ctaHref}
+            href="#tarifs"
             whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
             className="inline-flex items-center gap-2.5 px-10 py-5 text-white text-lg font-bold rounded-full"
             style={{ background: '#F97316', boxShadow: '0 0 44px rgba(249,115,22,0.38)' }}
           >
-            Analyser ma première annonce →
+            Voir les offres →
           </motion.a>
-          <p className="text-sm mt-6" style={{ color: '#4B5563' }}>Sans engagement. Annulable à tout moment.</p>
+          <p className="text-sm mt-6" style={{ color: '#4B5563' }}>Choisissez la formule qui vous convient. Annulable à tout moment.</p>
         </FadeUp>
       </div>
     </section>
