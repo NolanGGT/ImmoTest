@@ -438,8 +438,8 @@ function HeroSection() {
     { text: 'En toute confiance.', color: '#F97316', baseDelay: 0.65 },
   ]
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-16">
-      <div className="absolute inset-0 z-0">
+    <section className="relative h-screen min-h-[600px] flex flex-col items-center justify-center overflow-hidden pt-16">
+      <div className="absolute inset-0">
         <Image src="/images/hero.png" alt="Hero" fill className="object-cover object-top" priority />
         <div className="absolute inset-0 bg-black/40" />
       </div>
