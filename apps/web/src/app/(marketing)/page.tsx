@@ -437,19 +437,12 @@ function HeroSection() {
     { text: 'En toute confiance.', color: '#F97316', baseDelay: 0.65 },
   ]
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-16"
-      style={{ background: 'linear-gradient(140deg,#0F0F0F 0%,#141414 55%,#0F0F0F 100%)' }}>
-      <Grain />
-      {/* Photo placeholder — replace with real image of couple looking at a laptop */}
-      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 80% 55% at 50% 38%, rgba(249,115,22,0.07) 0%, transparent 70%)' }} />
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="relative w-[520px] h-[320px] max-w-[85vw] rounded-2xl overflow-hidden opacity-30"
-          style={{ background: 'linear-gradient(135deg,#1A1A1A 0%,#2A1F1A 100%)', border: '1px solid rgba(255,255,255,0.05)' }}>
-          <span className="absolute bottom-3 right-4 text-[11px] font-mono" style={{ color: '#4B5563' }}>
-            [ Photo : couple regardant un écran ]
-          </span>
-        </div>
+    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-16">
+      <div className="absolute inset-0 z-0" style={{ backgroundImage: "url('/images/hero.png')", backgroundSize: 'cover', backgroundPosition: 'center top' }}>
+        <div className="absolute inset-0 bg-black/60" />
       </div>
+      <Grain />
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 80% 55% at 50% 38%, rgba(249,115,22,0.07) 0%, transparent 70%)' }} />
 
       <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-8">
